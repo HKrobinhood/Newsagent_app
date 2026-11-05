@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/scroll_categories"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipToPadding="false"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="6dp"
+    android:scrollbars="none">
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chip_group_categories"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:checkedChip="@+id/chip_category_all"
+        app:selectionRequired="true"
+        app:singleLine="true"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_category_all"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_all"
+            android:textColor="@color/chip_text_selector"
+            app:chipBackgroundColor="@color/chip_background_selector"
+            app:chipStrokeColor="@color/chip_stroke"
+            app:chipStrokeWidth="1dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_category_world"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_world"
+            android:textColor="@color/chip_text_selector"
+            app:chipBackgroundColor="@color/chip_background_selector"
+            app:chipStrokeColor="@color/chip_stroke"
+            app:chipStrokeWidth="1dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_category_tech"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_technology"
+            android:textColor="@color/chip_text_selector"
+            app:chipBackgroundColor="@color/chip_background_selector"
+            app:chipStrokeColor="@color/chip_stroke"
+            app:chipStrokeWidth="1dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_category_business"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_business"
+            android:textColor="@color/chip_text_selector"
+            app:chipBackgroundColor="@color/chip_background_selector"
+            app:chipStrokeColor="@color/chip_stroke"
+            app:chipStrokeWidth="1dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_category_science"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_science"
+            android:textColor="@color/chip_text_selector"
+            app:chipBackgroundColor="@color/chip_background_selector"
+            app:chipStrokeColor="@color/chip_stroke"
+            app:chipStrokeWidth="1dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_category_health"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_health"
+            android:textColor="@color/chip_text_selector"
+            app:chipBackgroundColor="@color/chip_background_selector"
+            app:chipStrokeColor="@color/chip_stroke"
+            app:chipStrokeWidth="1dp" />
+
+    </com.google.android.material.chip.ChipGroup>
+
+</HorizontalScrollView>

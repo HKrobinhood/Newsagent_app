@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GlobalNewsAI</string>
+    <string name="nav_news">News</string>
+    <string name="nav_globe">Globe</string>
+    <string name="nav_chat">AI Intel</string>
+
+    <string name="news_title">Global News</string>
+    <string name="news_subtitle_format">%1$d articles synchronized</string>
+    <string name="news_loading">Loading global news...</string>
+    <string name="news_error_title">Connection Issue</string>
+    <string name="news_error_default">Unable to connect to GlobalNewsAI service.</string>
+    <string name="news_retry">Retry</string>
+    <string name="news_empty">No news found for this category.</string>
+    <string name="news_open_in_browser">Open original news article in external browser</string>
+
+    <string name="category_all">ALL</string>
+    <string name="category_world">WORLD</string>
+    <string name="category_technology">TECH</string>
+    <string name="category_business">BUSINESS</string>
+    <string name="category_science">SCIENCE</string>
+    <string name="category_health">HEALTH</string>
+
+    <string name="globe_feed_title">Geolocated Situation Feed (%1$d)</string>
+    <string name="retry">Retry</string>
+    <string name="dialog_cancel">Close</string>
+    <string name="error_network_general">Network error occurred while fetching news.</string>
+</resources>

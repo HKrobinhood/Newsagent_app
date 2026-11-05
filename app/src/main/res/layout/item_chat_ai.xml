@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <!-- AI Agent Avatar Icon -->
+    <ImageView
+        android:id="@+id/iv_ai_avatar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/bg_tag_source"
+        android:contentDescription="@string/nav_chat"
+        android:padding="6dp"
+        android:src="@drawable/ic_sparkles"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- AI Message Bubble Container -->
+    <LinearLayout
+        android:id="@+id/layout_ai_bubble_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/iv_ai_avatar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="310dp">
+
+        <LinearLayout
+            android:id="@+id/layout_bubble_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_bubble_ai"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- Search Mode Tag -->
+            <TextView
+                android:id="@+id/tv_ai_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_tag_source"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textColor="@color/primary_cyan"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Mode: title_search"
+                tools:visibility="visible" />
+
+            <!-- Thinking Progress Bar -->
+            <ProgressBar
+                android:id="@+id/progress_thinking"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:indeterminate="true"
+                android:visibility="gone"
+                tools:visibility="gone" />
+
+            <!-- Answer Content Text -->
+            <TextView
+                android:id="@+id/tv_ai_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="3dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                tools:text="Hello! I am GlobalNewsAI Intelligence Agent. Ask me about recent international news." />
+
+            <!-- Referenced Sources Header -->
+            <TextView
+                android:id="@+id/tv_sources_header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="4dp"
+                android:text="Referenced Intelligence Sources:"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- Sources List Container -->
+            <LinearLayout
+                android:id="@+id/layout_sources_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+
+        <!-- Timestamp -->
+        <TextView
+            android:id="@+id/tv_ai_timestamp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="3dp"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            tools:text="12:05" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

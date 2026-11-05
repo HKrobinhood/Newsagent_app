@@ -1,0 +1,14 @@
+.git
+.gitignore
+.gradle
+.idea
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
+app/build
+backend/tests
+*.log
