@@ -17,6 +17,8 @@ import com.example.newsagnet.R;
 import com.example.newsagnet.concurrency.AppExecutors;
 import com.example.newsagnet.data.prefs.NewsPreferences;
 import com.example.newsagnet.databinding.FragmentNewsBinding;
+import com.example.newsagnet.history.HistoryRepository;
+import com.example.newsagnet.history.ReadingHistoryActivity;
 import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.model.NewsCategory;
 import com.example.newsagnet.repository.JavaNewsRepository;
@@ -183,6 +185,9 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
   }
 
   private void setupHeaderActions() {
+    binding.btnHistory.setOnClickListener(
+        v -> startActivity(new Intent(requireContext(), ReadingHistoryActivity.class)));
+
     binding.btnRefresh.setOnClickListener(v -> {
       Log.d(TAG, "Header refresh clicked");
       loadNews(true);
@@ -394,6 +399,7 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
       try {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         startActivity(intent);
+        HistoryRepository.recordOpened(requireContext(), article);
       } catch (Exception e) {
         Log.e(TAG, "Failed to launch intent for URL: " + url, e);
       }

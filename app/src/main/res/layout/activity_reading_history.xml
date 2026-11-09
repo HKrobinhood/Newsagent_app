@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/history_root" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingStart="8dp" android:paddingEnd="8dp">
+        <ImageButton android:id="@+id/history_back" android:layout_width="48dp"
+            android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_history_back" android:contentDescription="@string/history_back" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/history_title"
+            android:textSize="22sp" android:textStyle="bold" android:textColor="@color/text_primary"
+            android:maxLines="1" android:ellipsize="end" />
+        <ImageButton android:id="@+id/history_clear" android:layout_width="48dp"
+            android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_history_delete" android:contentDescription="@string/history_clear" />
+    </LinearLayout>
+
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp"
+        android:text="@string/history_local_hint" android:textSize="12sp" android:textColor="@color/text_secondary" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:hint="@string/history_search"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox" app:endIconMode="clear_text">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/history_search"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:inputType="text" android:imeOptions="actionSearch" android:maxLines="1"
+            android:textColor="@color/text_primary" android:saveEnabled="false" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:layout_marginTop="8dp" android:orientation="horizontal">
+        <Spinner android:id="@+id/history_source" android:layout_width="0dp"
+            android:layout_height="48dp" android:layout_weight="1" android:spinnerMode="dropdown"
+            android:backgroundTint="@color/text_secondary" android:popupBackground="@color/surface_dark"
+            android:contentDescription="@string/history_source" android:saveEnabled="false" />
+        <Spinner android:id="@+id/history_dates" android:layout_width="0dp"
+            android:layout_height="48dp" android:layout_weight="1" android:spinnerMode="dropdown"
+            android:backgroundTint="@color/text_secondary" android:popupBackground="@color/surface_dark"
+            android:contentDescription="@string/history_dates" android:saveEnabled="false" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton android:id="@+id/history_range"
+        style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_marginStart="16dp"
+        android:visibility="gone" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp" android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/history_count" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:textSize="13sp" android:textColor="@color/text_secondary" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/history_reset"
+            style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="@string/history_reset" />
+    </LinearLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/history_list"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:clipToPadding="false" android:paddingBottom="16dp" />
+        <LinearLayout android:id="@+id/history_state" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:orientation="vertical" android:gravity="center"
+            android:padding="32dp" android:visibility="gone">
+            <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                android:src="@drawable/ic_history" android:contentDescription="@null" android:layout_marginBottom="16dp" />
+            <TextView android:id="@+id/history_state_title" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center" android:textSize="20sp"
+                android:textStyle="bold" android:textColor="@color/text_primary" />
+            <TextView android:id="@+id/history_state_body" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center" android:layout_marginTop="10dp"
+                android:lineSpacingExtra="3dp" android:textSize="14sp" android:textColor="@color/text_secondary" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/history_retry"
+                style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_marginTop="8dp"
+                android:text="@string/history_retry" android:visibility="gone" />
+        </LinearLayout>
+        <ProgressBar android:id="@+id/history_loading" android:layout_width="32dp"
+            android:layout_height="32dp" android:layout_gravity="top|center_horizontal"
+            android:indeterminateTint="@color/primary_cyan" android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>
