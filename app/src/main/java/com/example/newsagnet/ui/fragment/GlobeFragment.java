@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.newsagnet.R;
 import com.example.newsagnet.concurrency.ResultCallback;
 import com.example.newsagnet.databinding.FragmentGlobeBinding;
+import com.example.newsagnet.history.HistoryRepository;
 import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.repository.JavaNewsRepository;
 import com.example.newsagnet.repository.JavaNewsRepositoryImpl;
@@ -191,6 +192,7 @@ public class GlobeFragment extends Fragment
             Intent browserIntent =
                 new Intent(Intent.ACTION_VIEW, Uri.parse(selectedArticle.getOriginalUrl()));
             startActivity(browserIntent);
+            HistoryRepository.recordOpened(requireContext(), selectedArticle);
           }
         });
   }

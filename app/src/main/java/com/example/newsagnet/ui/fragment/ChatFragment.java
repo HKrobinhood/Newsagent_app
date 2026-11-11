@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.newsagnet.concurrency.ResultCallback;
 import com.example.newsagnet.databinding.FragmentChatBinding;
+import com.example.newsagnet.history.HistoryRepository;
 import com.example.newsagnet.model.ChatMessage;
 import com.example.newsagnet.model.MessageRole;
 import com.example.newsagnet.model.NewsArticle;
@@ -250,6 +251,7 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
       try {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         startActivity(intent);
+        HistoryRepository.recordOpened(requireContext(), article);
       } catch (Exception e) {
         Log.e(TAG, "Failed to launch web browser intent: " + url, e);
       }

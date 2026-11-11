@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_title">Reading history</string>
+    <string name="history_back">Back</string>
+    <string name="history_clear">Clear all</string>
+    <string name="history_search">Search titles or notes</string>
+    <string name="history_source">Media source</string>
+    <string name="history_dates">Opening date</string>
+    <string name="history_all_sources">All sources</string>
+    <string name="history_all_time">All time</string>
+    <string name="history_last_week">Last 7 days</string>
+    <string name="history_custom_dates">Custom dates…</string>
+    <string name="history_date_start">First opening date</string>
+    <string name="history_date_end">Last opening date</string>
+    <string name="history_date_change">%1$s – %2$s · Change</string>
+    <string name="history_reset">Reset filters</string>
+    <string name="history_empty_title">Your reading trail starts here</string>
+    <string name="history_empty_body">Open a news link from News, Globe or AI Intel to find it here later.</string>
+    <string name="history_no_matches">No matching history</string>
+    <string name="history_no_matches_body">Try another keyword, source or opening date.</string>
+    <string name="history_error_title">History couldn’t be loaded</string>
+    <string name="history_error_body">Your saved history has not been cleared. Please try again.</string>
+    <string name="history_retry">Try again</string>
+    <string name="history_open">Open original</string>
+    <string name="history_note">Edit note</string>
+    <string name="history_note_hint">Your note about this story</string>
+    <string name="history_save">Save</string>
+    <string name="history_cancel">Cancel</string>
+    <string name="history_delete">Delete</string>
+    <string name="history_delete_title">Delete this history item?</string>
+    <string name="history_delete_body">Its saved note will also be removed.</string>
+    <string name="history_clear_title">Clear all reading history?</string>
+    <string name="history_clear_body">This removes every history item and note on this device, including items hidden by your filters. This cannot be undone.</string>
+    <string name="history_opened">Opened %1$s</string>
+    <string name="history_published">Published %1$s</string>
+    <string name="history_published_unknown">Publication time unavailable</string>
+    <string name="history_note_preview">Note: %1$s</string>
+    <string name="history_local_hint">Links you opened · saved on this device</string>
+    <string name="history_action_failed">Couldn’t update history. Please try again.</string>
+    <string name="history_item_gone">This item is no longer in history.</string>
+    <string name="history_open_failed">No browser could open this link.</string>
+    <plurals name="history_results">
+        <item quantity="one">%d saved story</item>
+        <item quantity="other">%d saved stories</item>
+    </plurals>
+</resources>
