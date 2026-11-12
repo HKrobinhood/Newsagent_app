@@ -358,15 +358,24 @@ public class NewsFragment extends Fragment
             currentPage = 1;
             hasMore = result.isHasMore();
 
-            List<NewsArticle> editorialFeed =
-                com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
-                    result.getArticles(), prefs, currentCategory);
+            List<NewsArticle> serverArticles = result.getArticles();
             articleDataset.clear();
-            articleDataset.addAll(editorialFeed);
+
+            if (!serverArticles.isEmpty()) {
+              articleDataset.addAll(prefs.filterArticles(serverArticles));
+            } else {
+              // Seamless offline fallback when database has not yet ingested news
+              List<NewsArticle> fallbackFeed =
+                  com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+                      new ArrayList<>(), prefs, currentCategory);
+              articleDataset.addAll(fallbackFeed);
+            }
 
             if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
-              renderData(editorialFeed.size(), false);
+              renderData(articleDataset.size(), false);
+              updateHeaderSubtitle(
+                  result.getTotal() > 0 ? result.getTotal() : articleDataset.size());
             }
           }
 
@@ -377,19 +386,23 @@ public class NewsFragment extends Fragment
             isLoading = false;
             isRefreshing = false;
 
-            // In N1 prototype, provide editorial mock feed if server is not reachable
-            List<NewsArticle> fallbackFeed =
-                com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
-                    new ArrayList<>(), prefs, currentCategory);
+            if (articleDataset.isEmpty()) {
+              // Provide offline editorial feed if server unreachable and no previous cached articles
+              List<NewsArticle> fallbackFeed =
+                  com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+                      new ArrayList<>(), prefs, currentCategory);
 
-            if (!fallbackFeed.isEmpty()) {
-              articleDataset.clear();
-              articleDataset.addAll(fallbackFeed);
-              if (binding != null) {
-                binding.swipeRefresh.setRefreshing(false);
-                renderData(fallbackFeed.size(), false);
+              if (!fallbackFeed.isEmpty()) {
+                articleDataset.addAll(fallbackFeed);
+                if (binding != null) {
+                  binding.swipeRefresh.setRefreshing(false);
+                  renderData(fallbackFeed.size(), false);
+                }
+                return;
               }
-            } else if (binding != null) {
+            }
+
+            if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
               if (articleDataset.isEmpty()) {
                 showErrorState(throwable.getMessage());

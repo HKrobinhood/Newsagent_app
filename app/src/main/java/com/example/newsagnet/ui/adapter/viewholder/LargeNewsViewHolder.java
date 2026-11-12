@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.newsagnet.R;
 import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.ui.adapter.NewsItemClickListener;
@@ -59,6 +61,8 @@ public class LargeNewsViewHolder extends RecyclerView.ViewHolder {
           .load(imageModel)
           .placeholder(R.drawable.mock_img_placeholder)
           .error(R.drawable.mock_img_placeholder)
+          .diskCacheStrategy(DiskCacheStrategy.ALL)
+          .transition(DrawableTransitionOptions.withCrossFade())
           .centerCrop()
           .into(ivCover);
     } else {

@@ -120,20 +120,32 @@ public class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
       return;
     }
 
-    // Editorial partition:
-    // Index 0: Featured Cover Story
-    featuredArticle = rawArticles.get(0);
-
-    // Indices 1..4: Recommended carousel (up to 4 items)
-    int recEnd = Math.min(5, rawArticles.size());
-    for (int i = 1; i < recEnd; i++) {
-      recommendedArticles.add(rawArticles.get(i));
+    // Deterministic selection: Pick first recent article that has a valid image as Featured Cover Story
+    int featuredIndex = 0;
+    for (int i = 0; i < rawArticles.size(); i++) {
+      if (rawArticles.get(i).hasImage()) {
+        featuredIndex = i;
+        break;
+      }
     }
-    hasRecommendedSection = !recommendedArticles.isEmpty();
+    featuredArticle = rawArticles.get(featuredIndex);
 
-    // Indices 5..N: Latest News Asymmetric Grid
-    for (int i = recEnd; i < rawArticles.size(); i++) {
-      latestArticles.add(rawArticles.get(i));
+    // Remaining items pool without the featured article (ensuring no duplicates across sections)
+    List<NewsArticle> pool = new ArrayList<>(rawArticles);
+    pool.remove(featuredIndex);
+
+    // Recommended carousel: take up to 4 articles
+    int recCount = Math.min(4, Math.max(0, pool.size() - 2));
+    if (recCount > 0) {
+      for (int i = 0; i < recCount; i++) {
+        recommendedArticles.add(pool.get(i));
+      }
+      hasRecommendedSection = true;
+    }
+
+    // Latest News asymmetric grid: all remaining articles
+    for (int i = recCount; i < pool.size(); i++) {
+      latestArticles.add(pool.get(i));
     }
   }
 
