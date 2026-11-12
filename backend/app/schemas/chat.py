@@ -26,6 +26,43 @@ class ChatRequest(BaseModel):
         default="auto",
         description="Execution mode: auto, title_search, or web_verification",
     )
+    source_ids: list[str] | None = Field(
+        None,
+        description="Optional list of allowed news source IDs",
+    )
+    llm_provider: str | None = Field(
+        None,
+        description="Optional LLM provider: server_default, gemini, or openai",
+    )
+
+
+class KeyTestRequest(BaseModel):
+    """Request payload for testing LLM provider connectivity."""
+
+    provider: str = Field(
+        default="gemini",
+        description="Target LLM provider: server_default, gemini, or openai",
+    )
+    api_key: str | None = Field(
+        default=None,
+        description="Optional API key if not supplied via X-LLM-Api-Key header",
+    )
+
+
+class KeyTestResponse(BaseModel):
+    """Sanitized response from LLM API key connectivity verification."""
+
+    status: str = Field(
+        ...,
+        description=(
+            "Connection test status: Success, Authentication Failed, "
+            "Timeout, or Provider Error"
+        ),
+    )
+    provider: str = Field(..., description="Normalized provider identifier")
+    message: str = Field(
+        ..., description="Sanitized status message (never contains API key)"
+    )
 
 
 class ChatResponse(BaseModel):

@@ -8,7 +8,9 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.model.NewsArticle;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +24,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsViewHolder> {
 
   private final List<NewsArticle> articles = new ArrayList<>();
   private NewsItemClickListener clickListener;
+  private float fontScale = UserPreferences.DEFAULT_FONT_SCALE;
 
   public NewsAdapter() {}
 
@@ -31,6 +34,26 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsViewHolder> {
 
   public void setOnNewsItemClickListener(@Nullable NewsItemClickListener listener) {
     this.clickListener = listener;
+  }
+
+  /**
+   * Updates the font scale factor applied to bound news item cards.
+   *
+   * @param fontScale Font scale factor (0.90f to 1.30f).
+   */
+  public void setFontScale(float fontScale) {
+    if (Float.compare(this.fontScale, fontScale) != 0) {
+      this.fontScale = fontScale;
+      try {
+        notifyDataSetChanged();
+      } catch (Exception ignored) {
+        // Ignored in host JVM unit tests
+      }
+    }
+  }
+
+  public float getFontScale() {
+    return fontScale;
   }
 
   /**
@@ -92,6 +115,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsViewHolder> {
   public void onBindViewHolder(@NonNull NewsViewHolder holder, int position) {
     NewsArticle article = articles.get(position);
     holder.bind(article, clickListener);
+    FontScaleManager.applyFontScale(holder.itemView, fontScale);
   }
 
   @Override

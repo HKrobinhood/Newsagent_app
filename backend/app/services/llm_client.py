@@ -110,7 +110,7 @@ class GeminiLLMClient(BaseLLMClient):
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.post(
                     self.endpoint,
-                    params={"key": self.api_key},
+                    headers={"x-goog-api-key": self.api_key},
                     json=payload,
                 )
                 if resp.status_code == 200:
@@ -126,7 +126,10 @@ class GeminiLLMClient(BaseLLMClient):
                                     fn.get("args", {}),
                                 )
         except Exception as e:
-            logger.warning("Gemini tool call failed (%s), falling back to mock", e)
+            logger.warning(
+                "Gemini tool call failed (%s), falling back to mock",
+                type(e).__name__,
+            )
 
         return await self.fallback_mock.parse_and_call_tool(
             prompt, system_prompt, tools
@@ -166,7 +169,7 @@ class GeminiLLMClient(BaseLLMClient):
             async with httpx.AsyncClient(timeout=20.0) as client:
                 resp = await client.post(
                     self.endpoint,
-                    params={"key": self.api_key},
+                    headers={"x-goog-api-key": self.api_key},
                     json=payload,
                 )
                 if resp.status_code == 200:
@@ -178,15 +181,184 @@ class GeminiLLMClient(BaseLLMClient):
                         if texts:
                             return "".join(texts).strip()
         except Exception as e:
-            logger.warning("Gemini synthesis failed (%s), falling back to mock", e)
+            logger.warning(
+                "Gemini synthesis failed (%s), falling back to mock",
+                type(e).__name__,
+            )
 
         return await self.fallback_mock.generate_grounded_answer(
             prompt, search_results, system_prompt
         )
 
 
-def get_llm_client() -> BaseLLMClient:
-    """Factory creating configured LLM provider instance."""
+class OpenAILLMClient(BaseLLMClient):
+    """OpenAI LLM client utilizing fixed official REST API endpoint."""
+
+    ENDPOINT = "https://api.openai.com/v1/chat/completions"
+
+    def __init__(self, api_key: str, model: str = "gpt-4o-mini") -> None:
+        """Initialize OpenAI client with ephemeral user/server API key."""
+        self.api_key = api_key
+        self.model = model
+        self.fallback_mock = MockLLMClient()
+
+    async def parse_and_call_tool(
+        self, prompt: str, system_prompt: str, tools: list[dict]
+    ) -> tuple[str, dict[str, Any]]:
+        """Parse intent via IntentParser with deterministic tool mapping."""
+        return await self.fallback_mock.parse_and_call_tool(
+            prompt, system_prompt, tools
+        )
+
+    async def generate_grounded_answer(
+        self, prompt: str, search_results: list[dict], system_prompt: str
+    ) -> str:
+        """Synthesize grounded answer via OpenAI Chat Completions or mock fallback."""
+        if not self.api_key or not search_results:
+            return await self.fallback_mock.generate_grounded_answer(
+                prompt, search_results, system_prompt
+            )
+
+        context_lines = []
+        for r in search_results:
+            source = r.get("source_name")
+            title = r.get("title")
+            loc = r.get("location_name", "Global")
+            url = r.get("original_url")
+            context_lines.append(f"- [{source}] {title} (Location: {loc}, URL: {url})")
+        context_bullets = "\n".join(context_lines)
+
+        user_content = (
+            f"User Query: {prompt}\n\n"
+            f"Retrieved Verified News Database Articles:\n{context_bullets}\n\n"
+            "Synthesize a factual summary strictly answering the user query "
+            "based ONLY on the above articles."
+        )
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 400,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                resp = await client.post(
+                    self.ENDPOINT,
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json=payload,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        content = choices[0].get("message", {}).get("content", "")
+                        if content and content.strip():
+                            return content.strip()
+        except Exception as e:
+            logger.warning(
+                "OpenAI synthesis failed (%s), falling back to mock",
+                type(e).__name__,
+            )
+
+        return await self.fallback_mock.generate_grounded_answer(
+            prompt, search_results, system_prompt
+        )
+
+
+SUPPORTED_PROVIDERS = {"server_default", "gemini", "openai"}
+
+
+def get_llm_client(
+    provider: str | None = None,
+    api_key: str | None = None,
+) -> BaseLLMClient:
+    """Factory creating configured LLM provider instance.
+
+    Supports both ephemeral user-supplied provider keys and server default.
+    Never persists or logs user-provided API keys.
+    """
+    normalized_provider = (provider or "server_default").strip().lower()
+    cleaned_key = (api_key or "").strip()
+
+    if normalized_provider == "gemini" and cleaned_key:
+        return GeminiLLMClient(api_key=cleaned_key, model=settings.LLM_MODEL)
+    if normalized_provider == "openai" and cleaned_key:
+        return OpenAILLMClient(api_key=cleaned_key)
+
     if settings.LLM_API_KEY.strip():
         return GeminiLLMClient(api_key=settings.LLM_API_KEY, model=settings.LLM_MODEL)
     return MockLLMClient()
+
+
+async def verify_provider_key(
+    provider: str,
+    api_key: str | None,
+) -> tuple[str, str]:
+    """Verify LLM provider API key connectivity without wasting tokens.
+
+    Returns:
+        Tuple of (status_code_label, sanitized_message) where status_code_label
+        is one of: 'Success', 'Authentication Failed', 'Timeout', 'Provider Error'.
+    """
+    normalized_provider = (provider or "server_default").strip().lower()
+    if normalized_provider not in SUPPORTED_PROVIDERS:
+        return (
+            "Provider Error",
+            "Unsupported LLM provider. Allowed: server_default, gemini, openai.",
+        )
+
+    if normalized_provider == "server_default":
+        return (
+            "Success",
+            "Server Default AI Agent is active and ready.",
+        )
+
+    cleaned_key = (api_key or "").strip()
+    if not cleaned_key or len(cleaned_key) < 8 or any(c.isspace() for c in cleaned_key):
+        return (
+            "Authentication Failed",
+            "API key is missing or has an invalid format.",
+        )
+
+    if normalized_provider == "gemini":
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{settings.LLM_MODEL}"
+        )
+        headers = {"x-goog-api-key": cleaned_key}
+    else:
+        url = "https://api.openai.com/v1/models"
+        headers = {"Authorization": f"Bearer {cleaned_key}"}
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                return (
+                    "Success",
+                    f"Connected to {normalized_provider.upper()} successfully.",
+                )
+            if resp.status_code in (400, 401, 403):
+                return (
+                    "Authentication Failed",
+                    "API key was rejected by the provider. Please check your key.",
+                )
+            return (
+                "Provider Error",
+                f"Provider returned HTTP {resp.status_code}.",
+            )
+    except httpx.TimeoutException:
+        return (
+            "Timeout",
+            "Connection to LLM provider timed out.",
+        )
+    except Exception:
+        return (
+            "Provider Error",
+            "Failed to reach LLM provider endpoint.",
+        )

@@ -8,8 +8,10 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.model.ChatMessage;
 import com.example.newsagnet.model.MessageRole;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +28,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
   private final List<ChatMessage> messages = new ArrayList<>();
   private NewsItemClickListener sourceClickListener;
+  private float fontScale = UserPreferences.DEFAULT_FONT_SCALE;
 
   public ChatAdapter() {}
 
@@ -35,6 +38,26 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
   public void setOnSourceClickListener(@Nullable NewsItemClickListener listener) {
     this.sourceClickListener = listener;
+  }
+
+  /**
+   * Updates the font scale factor applied to chat bubbles and citation source cards.
+   *
+   * @param fontScale Font scale factor (0.90f to 1.30f).
+   */
+  public void setFontScale(float fontScale) {
+    if (Float.compare(this.fontScale, fontScale) != 0) {
+      this.fontScale = fontScale;
+      try {
+        notifyDataSetChanged();
+      } catch (Exception ignored) {
+        // Ignored in host JVM unit tests
+      }
+    }
+  }
+
+  public float getFontScale() {
+    return fontScale;
   }
 
   public void submitList(@NonNull List<ChatMessage> newMessages) {
@@ -105,6 +128,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     } else if (holder instanceof AiMessageViewHolder) {
       ((AiMessageViewHolder) holder).bind(message, sourceClickListener);
     }
+    FontScaleManager.applyFontScale(holder.itemView, fontScale);
   }
 
   @Override

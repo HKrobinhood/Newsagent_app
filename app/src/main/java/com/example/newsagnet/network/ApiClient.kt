@@ -39,6 +39,10 @@ object ApiClient {
         createChatService(customBaseUrl ?: DEFAULT_BASE_URL)
     }
 
+    val authApiService: AuthApiService by lazy {
+        createAuthService(customBaseUrl ?: DEFAULT_BASE_URL)
+    }
+
     fun setBaseUrl(url: String) {
         customBaseUrl = url
     }
@@ -61,5 +65,15 @@ object ApiClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ChatApiService::class.java)
+    }
+
+    fun createAuthService(baseUrl: String = DEFAULT_BASE_URL): AuthApiService {
+        val sanitizedUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        return Retrofit.Builder()
+            .baseUrl(sanitizedUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AuthApiService::class.java)
     }
 }

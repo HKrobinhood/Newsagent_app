@@ -26,5 +26,12 @@ class Settings:
     # Web Search
     SEARCH_API_KEY: str = os.getenv("SEARCH_API_KEY", "")
 
+    # Auth & Security
+    SECRET_KEY: str = os.getenv(
+        "SECRET_KEY", "globalnewsai-insecure-dev-secret-key-change-in-prod"
+    )
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = 86400 * 30  # 30 days
+
 
 settings = Settings()

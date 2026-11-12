@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Account, Media Sources, Appearance &amp; AI Agent</string>
+    <string name="settings_back">Navigate back from Settings</string>
+    <string name="settings_open">Open Settings</string>
+
+    <!-- Account Section -->
+    <string name="settings_section_account">Account</string>
+    <string name="settings_account_status_guest">Guest</string>
+    <string name="settings_account_status_signed_in">Signed in</string>
+    <string name="settings_account_guest_name">Guest User</string>
+    <string name="settings_account_guest_email">Not signed in · Local preferences active</string>
+    <string name="settings_account_avatar_desc">User account avatar</string>
+    <string name="settings_btn_google_sign_in">Sign in with Google</string>
+    <string name="settings_btn_sign_out">Sign out</string>
+    <string name="settings_account_hint">You can customize local settings without signing in. Sign in to sync media and font preferences across devices.</string>
+    <string name="settings_account_signed_in_hint">Signed in with Google. Cross-device preference synchronization active.</string>
+    <string name="settings_account_sync_success">Settings successfully synchronized with your account.</string>
+    <string name="settings_google_auth_not_configured_guide">Google Sign-In requires a Google Cloud OAuth 2.0 Web Client ID. Please configure \'google_server_client_id\' in strings.xml to enable Google Sign-In. Retaining Guest Mode.</string>
+    <string name="google_server_client_id"></string>
+
+    <!-- News Sources Section -->
+    <string name="settings_section_sources">News Sources</string>
+    <string name="settings_sources_subtitle">Choose media outlets included in News, 3D Globe, and AI Intel</string>
+    <string name="settings_btn_select_all">Select All</string>
+    <string name="settings_btn_reset_sources">Reset to Default</string>
+    <string name="settings_source_bbc">BBC News</string>
+    <string name="settings_source_cnn">CNN</string>
+    <string name="settings_source_aljazeera">Al Jazeera</string>
+    <string name="settings_source_fox">Fox News</string>
+    <string name="settings_empty_all_sources_disabled">No news sources selected. Enable at least one media source in Settings.</string>
+
+    <!-- Appearance Section -->
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_appearance_subtitle">Adjust global text size across headlines, globe cards, AI chat, and history</string>
+    <string name="settings_font_small">Small (0.90x)</string>
+    <string name="settings_font_medium">Medium (1.00x · Default)</string>
+    <string name="settings_font_large">Large (1.15x)</string>
+    <string name="settings_font_extra_large">Extra Large (1.30x)</string>
+    <string name="settings_font_preview_label">Live Text Preview</string>
+    <string name="settings_font_preview_headline">Global Semiconductor Summit Reaches New Supply Chain Accord</string>
+    <string name="settings_font_preview_meta">BBC News · World · 10m ago</string>
+    <string name="settings_font_preview_body">Verified across multiple international wire services with real-time situational intelligence.</string>
+
+    <!-- AI Agent Section -->
+    <string name="settings_section_ai_agent">AI Agent</string>
+    <string name="settings_ai_subtitle">Configure LLM provider and personal encrypted API Key (stored on this device only)</string>
+    <string name="settings_ai_provider_label">LLM Provider</string>
+    <string name="settings_ai_provider_server_default">Use Server Default</string>
+    <string name="settings_ai_provider_gemini">Google Gemini</string>
+    <string name="settings_ai_provider_openai">OpenAI</string>
+    <string name="settings_ai_key_hint">Enter personal API Key (hidden by default)</string>
+    <string name="settings_ai_status_default">Connection Status: Using Server Default</string>
+    <string name="settings_ai_status_configured">Connection Status: Personal Key Configured (%1$s · %2$s)</string>
+    <string name="settings_ai_status_testing">Connection Status: Testing connection…</string>
+    <string name="settings_ai_status_result">Connection Status: %1$s — %2$s</string>
+    <string name="settings_ai_error_empty_key">Please enter a valid API Key before saving.</string>
+    <string name="settings_ai_helper_saved">Saved on this device (%1$s · %2$s). Enter a new key to replace.</string>
+    <string name="settings_btn_save_key">Save Key</string>
+    <string name="settings_btn_remove_key">Remove Key</string>
+    <string name="settings_btn_test_connection">Test Connection</string>
+    <string name="settings_btn_server_default">Use Server Default</string>
+</resources>

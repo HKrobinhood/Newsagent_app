@@ -21,11 +21,11 @@ Before commencing any development task, refactoring step, or milestone:
 ## 2. Single-Branch Milestone Commit Policy (No Branch Sprawl)
 
 To maintain a clean, linear, and production-ready Git history for GitHub:
-1. **All milestones must be developed and committed on the SAME branch**:
-   - Work directly on the primary development branch (`main`).
-   - **Do NOT** create separate branches for each milestone (e.g., no `feature/m1`, `feature/m2`, `refactor/r1`, etc.).
+1. **All milestones must be developed and committed on the SAME designated development branch**:
+   - Work directly on the active development branch (`scDev`, or `main` when explicitly instructed).
+   - **Do NOT** create separate branches for each individual milestone (e.g., no `feature/s0`, `feature/s1`, `refactor/r1`, etc.).
 2. **Milestone Commit Standard**:
-   - Every milestone or functional increment must be established as structured Conventional Commits on this single branch:
+   - Every milestone or functional increment must be established as structured Conventional Commits on this single development branch (`scDev`):
      - `feat(<scope>): <description>`
      - `test(<scope>): <description>`
      - `fix(<scope>): <description>`

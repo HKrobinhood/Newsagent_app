@@ -13,7 +13,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.concurrency.ResultCallback;
+import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
+import com.example.newsagnet.data.prefs.UserPreferences;
+import com.example.newsagnet.data.prefs.UserPreferencesRepository;
 import com.example.newsagnet.databinding.FragmentChatBinding;
 import com.example.newsagnet.history.HistoryRepository;
 import com.example.newsagnet.model.ChatMessage;
@@ -24,25 +28,30 @@ import com.example.newsagnet.repository.JavaChatRepository;
 import com.example.newsagnet.repository.JavaChatRepositoryImpl;
 import com.example.newsagnet.ui.adapter.ChatAdapter;
 import com.example.newsagnet.ui.adapter.NewsItemClickListener;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
- * ChatFragment hosts the AI news intelligence assistant interface with multi-type ViewHolders.
+ * ChatFragment hosts the AI news intelligence assistant interface with multi-type ViewHolders,
+ * media source constraint propagation, and global font scaling.
  *
  * <p>Conforms to COMP7506 Ch3 (OOP Polymorphism), Ch4 (Mobile Lifecycle), Ch5 (XML Layouts,
  * RecyclerView, Adapter, Multi-Type ViewHolders), Ch6 (Intent), and Ch7 (Thread, Runnable,
  * ExecutorService, Handler, UI Thread).
  */
-public class ChatFragment extends Fragment implements NewsItemClickListener {
+public class ChatFragment extends Fragment
+    implements NewsItemClickListener, UserPreferencesRepository.OnPreferencesChangedListener {
 
   private static final String TAG = "ChatFragment";
 
   private FragmentChatBinding binding;
   private JavaChatRepository chatRepository;
+  private UserPreferencesRepository preferencesRepository;
   private ChatAdapter chatAdapter;
   private LinearLayoutManager layoutManager;
 
@@ -65,7 +74,7 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     Log.d(TAG, "onCreate: Initializing ChatRepository");
-    chatRepository = new JavaChatRepositoryImpl();
+    chatRepository = new JavaChatRepositoryImpl(requireContext());
   }
 
   @Nullable
@@ -84,12 +93,39 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
     super.onViewCreated(view, savedInstanceState);
     Log.d(TAG, "onViewCreated: Initializing Chat RecyclerView and Input listeners");
 
+    preferencesRepository = LocalPreferencesRepository.getInstance(requireContext());
+    preferencesRepository.addOnPreferencesChangedListener(this);
+
     setupRecyclerView();
     setupInputActions();
     setupHeaderActions();
 
+    applyUserFontScale(preferencesRepository.getFontScale());
+
     if (messageList.isEmpty()) {
       initWelcomeMessage();
+    }
+  }
+
+  private void applyUserFontScale(float fontScale) {
+    if (binding != null) {
+      FontScaleManager.applyFontScale(binding.getRoot(), fontScale);
+    }
+    if (chatAdapter != null) {
+      chatAdapter.setFontScale(fontScale);
+    }
+  }
+
+  @Override
+  public void onPreferencesChanged(@NonNull UserPreferences updatedPreferences) {
+    applyUserFontScale(updatedPreferences.getFontScale());
+  }
+
+  @Override
+  public void onHiddenChanged(boolean hidden) {
+    super.onHiddenChanged(hidden);
+    if (!hidden && preferencesRepository != null) {
+      applyUserFontScale(preferencesRepository.getFontScale());
     }
   }
 
@@ -123,6 +159,14 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
           messageList.clear();
           initWelcomeMessage();
         });
+
+    binding.btnChatSettings.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Chat header settings clicked");
+          if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).openSettings();
+          }
+        });
   }
 
   private void initWelcomeMessage() {
@@ -150,11 +194,9 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
       return;
     }
 
-    // Clear input field
     binding.etChatInput.setText("");
     setSendingState(true);
 
-    // Add user message
     ChatMessage userMessage =
         new ChatMessage.Builder()
             .setRole(MessageRole.USER)
@@ -163,7 +205,6 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
             .build();
     messageList.add(userMessage);
 
-    // Add thinking placeholder
     ChatMessage thinkingMessage =
         new ChatMessage.Builder()
             .setRole(MessageRole.ASSISTANT)
@@ -176,22 +217,31 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
     chatAdapter.submitList(new ArrayList<>(messageList));
     binding.recyclerChat.smoothScrollToPosition(messageList.size() - 1);
 
-    Log.d(TAG, "Submitting prompt via background executor: " + prompt);
+    Set<String> enabledSourceIds =
+        preferencesRepository != null ? preferencesRepository.getEnabledSourceIds() : null;
 
-    // Execute asynchronous inquiry via JavaChatRepository + AppExecutors (COMP7506 Ch7)
+    Log.d(
+        TAG,
+        "Submitting prompt via background executor: "
+            + prompt
+            + ", allowedSources="
+            + enabledSourceIds);
+
     chatRepository.sendMessage(
         prompt,
         currentSessionId,
         "hybrid",
+        enabledSourceIds,
         new ResultCallback<AgentChatResult>() {
           @Override
           public void onSuccess(@NonNull AgentChatResult result) {
-            Log.d(TAG, "AgentChatResult received on UI thread: " + result.getMessage().getContent());
+            Log.d(
+                TAG,
+                "AgentChatResult received on UI thread: " + result.getMessage().getContent());
 
             currentSessionId = result.getSessionId();
             setSendingState(false);
 
-            // Remove thinking message
             if (!messageList.isEmpty() && messageList.get(messageList.size() - 1).isThinking()) {
               messageList.remove(messageList.size() - 1);
             }
@@ -209,7 +259,6 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
             Log.e(TAG, "Agent error received: " + exception.getMessage(), exception);
             setSendingState(false);
 
-            // Replace thinking message with error message
             if (!messageList.isEmpty() && messageList.get(messageList.size() - 1).isThinking()) {
               messageList.remove(messageList.size() - 1);
             }
@@ -268,6 +317,9 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
   public void onResume() {
     super.onResume();
     Log.d(TAG, "onResume: ChatFragment active");
+    if (preferencesRepository != null) {
+      applyUserFontScale(preferencesRepository.getFontScale());
+    }
   }
 
   @Override
@@ -286,6 +338,9 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
   public void onDestroyView() {
     super.onDestroyView();
     Log.d(TAG, "onDestroyView: Clearing binding");
+    if (preferencesRepository != null) {
+      preferencesRepository.removeOnPreferencesChangedListener(this);
+    }
     binding = null;
   }
 
@@ -298,6 +353,6 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
   @Override
   public void onDetach() {
     super.onDetach();
-    Log.d(TAG, "onDetach: ChatFragment detached from Activity");
+    Log.d(TAG, "onDetach: ChatFragment detached");
   }
 }

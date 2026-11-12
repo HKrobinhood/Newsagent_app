@@ -10,7 +10,7 @@ from app.repositories.news_repository import NewsRepository
 from app.schemas.chat import ChatRequest, ChatResponse, NewsSourceRef
 from app.services.intent_parser import SEARCH_NEWS_TOOL
 from app.services.llm_client import SYSTEM_PROMPT, get_llm_client
-from app.services.web_search import get_web_search_client
+from app.services.web_search import get_web_search_client, infer_source_id
 
 logger = logging.getLogger(__name__)
 
@@ -63,13 +63,19 @@ class AgentService:
         return "title_search"
 
     async def process_chat(
-        self, request: ChatRequest, db: AsyncSession
+        self,
+        request: ChatRequest,
+        db: AsyncSession,
+        llm_provider: str | None = None,
+        llm_api_key: str | None = None,
     ) -> ChatResponse:
         """Process user inquiry across Dual-Mode pipeline.
 
         Args:
             request: Validated ChatRequest payload.
             db: Database session for citation lookups.
+            llm_provider: Ephemeral LLM provider identifier (if supplied).
+            llm_api_key: Ephemeral user-provided LLM API key (never persisted).
 
         Returns:
             ChatResponse with answer, citations, mode_used, and session ID.
@@ -77,11 +83,32 @@ class AgentService:
         session_id = request.session_id or str(uuid.uuid4())
         user_msg = request.message.strip()
 
+        effective_provider = llm_provider or request.llm_provider
         repo = NewsRepository(db)
-        llm_client = get_llm_client()
+        llm_client = get_llm_client(
+            provider=effective_provider,
+            api_key=llm_api_key,
+        )
         web_search = get_web_search_client()
 
         target_mode = self.determine_mode(user_msg, request.mode)
+
+        allowed_source_ids: list[str] | None = None
+        if request.source_ids is not None:
+            allowed_source_ids = [
+                s.strip().lower() for s in request.source_ids if s and s.strip()
+            ]
+            if not allowed_source_ids:
+                return ChatResponse(
+                    session_id=session_id,
+                    answer=(
+                        "当前已在 Settings 中取消勾选所有新闻媒体源。"
+                        "请先在 Settings 中启用至少一个媒体源后再进行检索。"
+                    ),
+                    mode_used=target_mode,
+                    sources=[],
+                    confidence=0.5,
+                )
 
         # -------------------------------------------------------------
         # 1. Title Search Mode (Internal Database Metadata Retrieval)
@@ -94,6 +121,22 @@ class AgentService:
             query = tool_args.get("query", "").strip()
             category = tool_args.get("category")
             source = tool_args.get("source")
+
+            if (
+                source
+                and allowed_source_ids is not None
+                and source.strip().lower() not in allowed_source_ids
+            ):
+                return ChatResponse(
+                    session_id=session_id,
+                    answer=(
+                        f"媒体源 '{source}' 当前已在 Settings 中被禁用，"
+                        "未检索该媒体的报道。"
+                    ),
+                    mode_used="title_search",
+                    sources=[],
+                    confidence=0.5,
+                )
 
             start_dt = None
             if tool_args.get("start_time"):
@@ -117,6 +160,7 @@ class AgentService:
                     keyword=query if query else None,
                     category=category,
                     source=source,
+                    source_ids=allowed_source_ids,
                     start_time=start_dt,
                     end_time=end_dt,
                 )
@@ -129,6 +173,7 @@ class AgentService:
                         limit=5,
                         category=category,
                         source=source,
+                        source_ids=allowed_source_ids,
                         start_time=start_dt,
                         end_time=end_dt,
                     )
@@ -140,6 +185,7 @@ class AgentService:
                         page=1,
                         limit=5,
                         keyword=query,
+                        source_ids=allowed_source_ids,
                     )
                     matched_articles.extend(fallback_articles)
 
@@ -197,10 +243,32 @@ class AgentService:
         # 2. Web Verification Mode (Realtime Cross-Checking with Web Search)
         # -------------------------------------------------------------
         try:
-            web_results = await web_search.search(user_msg, max_results=5)
+            raw_web_results = await web_search.search(user_msg, max_results=5)
         except Exception as e:
             logger.error("Web search execution failed: %s", e)
-            web_results = []
+            raw_web_results = []
+
+        if allowed_source_ids is not None:
+            web_results = [
+                r
+                for r in raw_web_results
+                if (r.source_id or infer_source_id(r.source_name, r.url))
+                in allowed_source_ids
+            ]
+            if not web_results and raw_web_results:
+                return ChatResponse(
+                    session_id=session_id,
+                    answer=(
+                        "根据您在 Settings 中启用的新闻媒体源限制，"
+                        "未在所选允许的媒体范围内找到可核实的报道"
+                        "（已严格排除未勾选媒体的新闻卡片）。"
+                    ),
+                    mode_used="web_verification",
+                    sources=[],
+                    confidence=0.5,
+                )
+        else:
+            web_results = raw_web_results
 
         if not web_results:
             return ChatResponse(

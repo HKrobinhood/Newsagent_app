@@ -21,8 +21,19 @@ from app.schemas.news import (
     NewsSourceResponse,
 )
 from app.services.collector_service import NewsCollectorService
+from app.services.collectors import ALL_COLLECTORS
 
 router = APIRouter()
+
+
+def _parse_source_ids(source_ids: str | None) -> list[str] | None:
+    """Parse optional comma-separated source_ids query parameter."""
+    if source_ids is None:
+        return None
+    stripped = source_ids.strip()
+    if not stripped or stripped.lower() == "__none__":
+        return []
+    return [s.strip().lower() for s in stripped.split(",") if s.strip()]
 
 
 @router.post(
@@ -62,16 +73,21 @@ async def list_news(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     category: str | None = Query(None, description="Category filter"),
     source: str | None = Query(None, description="Source ID filter"),
+    source_ids: str | None = Query(
+        None, description="Comma-separated allowed source IDs (e.g. bbc,cnn)"
+    ),
     keyword: str | None = Query(None, description="Keyword search in title"),
     db: AsyncSession = Depends(get_db),
 ) -> NewsListResponse:
     """Retrieve paginated list of news articles."""
     repo = NewsRepository(db)
+    parsed_source_ids = _parse_source_ids(source_ids)
     items, total = await repo.list_articles(
         page=page,
         limit=limit,
         category=category,
         source=source,
+        source_ids=parsed_source_ids,
         keyword=keyword,
     )
     has_more = (page * limit) < total
@@ -85,18 +101,55 @@ async def list_news(
 
 
 @router.get(
+    "/sources",
+    response_model=list[NewsSourceResponse],
+    summary="List available news media sources",
+)
+async def list_news_sources(
+    db: AsyncSession = Depends(get_db),
+) -> list[NewsSourceResponse]:
+    """Return all active news sources supported by the backend."""
+    repo = NewsRepository(db)
+    db_sources = await repo.list_sources(active_only=True)
+    by_id: dict[str, NewsSourceResponse] = {}
+
+    for collector in ALL_COLLECTORS:
+        by_id[collector.source_id] = NewsSourceResponse(
+            id=collector.source_id,
+            name=collector.source_name,
+            rss_url=collector.rss_url,
+            home_url=collector.home_url,
+            is_active=True,
+            last_polled=None,
+        )
+
+    for src in db_sources:
+        by_id[src.id] = NewsSourceResponse.model_validate(src)
+
+    return list(by_id.values())
+
+
+@router.get(
     "/geo",
     response_model=GeoFeatureCollection,
     summary="Get geolocated news hotspots in GeoJSON format",
 )
 async def get_geolocated_news(
     category: str | None = Query(None, description="Category filter"),
+    source_ids: str | None = Query(
+        None, description="Comma-separated allowed source IDs (e.g. bbc,cnn)"
+    ),
     limit: int = Query(100, ge=1, le=500, description="Max items to return"),
     db: AsyncSession = Depends(get_db),
 ) -> GeoFeatureCollection:
     """Retrieve geolocated news articles as standard GeoJSON FeatureCollection."""
     repo = NewsRepository(db)
-    articles = await repo.list_geolocated_articles(category=category, limit=limit)
+    parsed_source_ids = _parse_source_ids(source_ids)
+    articles = await repo.list_geolocated_articles(
+        category=category,
+        source_ids=parsed_source_ids,
+        limit=limit,
+    )
     features = [
         GeoFeature(
             geometry=GeoGeometry(coordinates=[a.longitude, a.latitude]),

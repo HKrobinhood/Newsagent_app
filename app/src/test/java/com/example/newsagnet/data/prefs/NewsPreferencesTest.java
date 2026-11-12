@@ -5,10 +5,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.SharedPreferences;
+import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.model.NewsCategory;
+import com.example.newsagnet.model.NewsSourceItem;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,6 +88,102 @@ public class NewsPreferencesTest {
     assertEquals(NewsCategory.ALL, preferences.getDefaultCategory());
     assertEquals(0L, preferences.getLastRefreshTime());
     assertEquals(20, preferences.getPageSize());
+  }
+
+  @Test
+  public void testUserPreferencesRepository_defaultEnabledSourcesAndFontScale() {
+    LocalPreferencesRepository repo = new LocalPreferencesRepository(preferences);
+    UserPreferences userPrefs = repo.getPreferences();
+
+    assertEquals(
+        new LinkedHashSet<>(Arrays.asList("bbc", "cnn", "aljazeera", "fox")),
+        userPrefs.getEnabledSourceIds());
+    assertEquals(1.00f, userPrefs.getFontScale(), 0.001f);
+    assertEquals(FontScaleOption.MEDIUM, userPrefs.getFontScaleOption());
+    assertEquals(1, userPrefs.getSettingsVersion());
+  }
+
+  @Test
+  public void testUserPreferencesRepository_toggleSourceAndFilterArticles() {
+    LocalPreferencesRepository repo = new LocalPreferencesRepository(preferences);
+    AtomicReference<UserPreferences> notified = new AtomicReference<>();
+    repo.addOnPreferencesChangedListener(notified::set);
+
+    repo.setSourceEnabled("bbc", false);
+
+    assertFalse(repo.getEnabledSourceIds().contains("bbc"));
+    assertTrue(repo.getEnabledSourceIds().contains("cnn"));
+    assertTrue(notified.get() != null && !notified.get().isSourceEnabled("bbc"));
+
+    NewsArticle bbcArticle =
+        new NewsArticle(
+            "1",
+            "BBC Headline",
+            "bbc",
+            "BBC News",
+            "2026-11-12T00:00:00Z",
+            "https://bbc.com/1",
+            "WORLD");
+    NewsArticle cnnArticle =
+        new NewsArticle(
+            "2",
+            "CNN Headline",
+            "cnn",
+            "CNN",
+            "2026-11-12T00:00:00Z",
+            "https://cnn.com/2",
+            "WORLD");
+
+    List<NewsArticle> filtered =
+        repo.getPreferences().filterArticles(Arrays.asList(bbcArticle, cnnArticle));
+    assertEquals(1, filtered.size());
+    assertEquals("CNN", filtered.get(0).getSourceName());
+  }
+
+  @Test
+  public void testUserPreferencesRepository_disableAllAndResetToDefault() {
+    LocalPreferencesRepository repo = new LocalPreferencesRepository(preferences);
+
+    repo.setEnabledSourceIds(Collections.emptySet());
+    assertTrue(repo.getEnabledSourceIds().isEmpty());
+    assertTrue(repo.getPreferences().areAllSourcesDisabled());
+
+    repo.resetSourcesToDefault(NewsSourceItem.getDefaultSourceIds());
+    assertEquals(4, repo.getEnabledSourceIds().size());
+    assertFalse(repo.getPreferences().areAllSourcesDisabled());
+  }
+
+  @Test
+  public void testUserPreferencesRepository_reconcileNewSourcesPreservesExistingSelection() {
+    LocalPreferencesRepository repo = new LocalPreferencesRepository(preferences);
+    // User disables BBC
+    repo.setSourceEnabled("bbc", false);
+
+    // Backend introduces a new source "reuters" while keeping known sources
+    Set<String> backendSources =
+        new LinkedHashSet<>(Arrays.asList("bbc", "cnn", "aljazeera", "fox", "reuters"));
+    repo.reconcileAvailableSources(backendSources);
+
+    Set<String> enabledAfter = repo.getEnabledSourceIds();
+    assertFalse("BBC should remain disabled", enabledAfter.contains("bbc"));
+    assertTrue("CNN should remain enabled", enabledAfter.contains("cnn"));
+    assertTrue(
+        "Newly discovered source should be enabled by default", enabledAfter.contains("reuters"));
+  }
+
+  @Test
+  public void testUserPreferencesRepository_fontScaleSaveAndRetrieve() {
+    LocalPreferencesRepository repo = new LocalPreferencesRepository(preferences);
+
+    repo.setFontScale(FontScaleOption.SMALL.getScale());
+    assertEquals(0.90f, repo.getFontScale(), 0.001f);
+
+    repo.setFontScale(FontScaleOption.LARGE.getScale());
+    assertEquals(1.15f, repo.getFontScale(), 0.001f);
+
+    repo.setFontScale(FontScaleOption.EXTRA_LARGE.getScale());
+    assertEquals(1.30f, repo.getFontScale(), 0.001f);
+    assertTrue(repo.getPreferences().getLastUpdated() > 0L);
   }
 
   /** In-memory test double for SharedPreferences without requiring Android framework mocks. */
