@@ -15,12 +15,18 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
+import com.example.newsagnet.concurrency.ResultCallback;
 import com.example.newsagnet.data.prefs.FontScaleOption;
 import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
 import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.data.prefs.UserPreferencesRepository;
+import com.example.newsagnet.data.security.AiProviderOption;
+import com.example.newsagnet.data.security.SecureApiKeyStore;
 import com.example.newsagnet.databinding.FragmentSettingsBinding;
+import com.example.newsagnet.model.KeyTestResult;
 import com.example.newsagnet.model.NewsSourceItem;
+import com.example.newsagnet.repository.JavaChatRepository;
+import com.example.newsagnet.repository.JavaChatRepositoryImpl;
 import com.example.newsagnet.repository.JavaNewsRepository;
 import com.example.newsagnet.repository.JavaNewsRepositoryImpl;
 import com.example.newsagnet.repository.NewsCallback;
@@ -58,7 +64,9 @@ public class SettingsFragment extends Fragment {
 
   private FragmentSettingsBinding binding;
   private UserPreferencesRepository preferencesRepository;
+  private SecureApiKeyStore secureApiKeyStore;
   private JavaNewsRepository newsRepository;
+  private JavaChatRepository chatRepository;
   private final Map<String, MaterialCheckBox> dynamicSourceCheckBoxes = new LinkedHashMap<>();
   private final Set<String> availableSourceIds =
       new LinkedHashSet<>(NewsSourceItem.getDefaultSourceIds());
@@ -86,7 +94,9 @@ public class SettingsFragment extends Fragment {
     super.onCreate(savedInstanceState);
     Log.d(TAG, "onCreate: Initializing SettingsFragment repositories");
     preferencesRepository = LocalPreferencesRepository.getInstance(requireContext());
+    secureApiKeyStore = SecureApiKeyStore.getInstance(requireContext());
     newsRepository = new JavaNewsRepositoryImpl();
+    chatRepository = new JavaChatRepositoryImpl(requireContext());
   }
 
   @Nullable
@@ -247,14 +257,195 @@ public class SettingsFragment extends Fragment {
   }
 
   private void setupAiAgentSection() {
+    binding.rgAiProvider.setOnCheckedChangeListener(
+        (group, checkedId) -> {
+          if (isUpdatingUi || secureApiKeyStore == null) {
+            return;
+          }
+          AiProviderOption selected = resolveProviderForRadioId(checkedId);
+          secureApiKeyStore.setSelectedProvider(selected);
+          updateAiStatusBanner(null);
+        });
+
+    binding.btnSaveApiKey.setOnClickListener(
+        v -> {
+          if (binding == null || secureApiKeyStore == null) {
+            return;
+          }
+          String rawInput =
+              binding.etApiKey.getText() != null
+                  ? binding.etApiKey.getText().toString().trim()
+                  : "";
+          if (rawInput.isEmpty()) {
+            binding.tilApiKey.setError(getString(R.string.settings_ai_error_empty_key));
+            return;
+          }
+          binding.tilApiKey.setError(null);
+
+          AiProviderOption targetProvider =
+              resolveProviderForRadioId(binding.rgAiProvider.getCheckedRadioButtonId());
+          if (targetProvider == AiProviderOption.SERVER_DEFAULT) {
+            targetProvider = AiProviderOption.GEMINI;
+          }
+
+          secureApiKeyStore.saveApiKey(targetProvider, rawInput);
+          // Immediately clear input field so full plaintext key is never displayed on screen
+          binding.etApiKey.setText("");
+          syncAiAgentUi();
+        });
+
+    binding.btnRemoveApiKey.setOnClickListener(
+        v -> {
+          if (binding == null || secureApiKeyStore == null) {
+            return;
+          }
+          secureApiKeyStore.removeApiKey();
+          binding.etApiKey.setText("");
+          binding.tilApiKey.setError(null);
+          syncAiAgentUi();
+        });
+
     binding.btnUseServerDefault.setOnClickListener(
         v -> {
-          if (binding != null) {
-            binding.rbProviderServerDefault.setChecked(true);
-            binding.etApiKey.setText("");
-            binding.tvAiConnectionStatus.setText(R.string.settings_ai_status_default);
+          if (binding == null || secureApiKeyStore == null) {
+            return;
           }
+          secureApiKeyStore.useServerDefault();
+          binding.etApiKey.setText("");
+          binding.tilApiKey.setError(null);
+          syncAiAgentUi();
         });
+
+    binding.btnTestConnection.setOnClickListener(
+        v -> {
+          if (binding == null || chatRepository == null || secureApiKeyStore == null) {
+            return;
+          }
+          binding.tilApiKey.setError(null);
+          AiProviderOption provider =
+              resolveProviderForRadioId(binding.rgAiProvider.getCheckedRadioButtonId());
+          String typedKey =
+              binding.etApiKey.getText() != null
+                  ? binding.etApiKey.getText().toString().trim()
+                  : "";
+          String keyToTest =
+              !typedKey.isEmpty() ? typedKey : secureApiKeyStore.getDecryptedApiKey();
+
+          binding.btnTestConnection.setEnabled(false);
+          binding.tvAiConnectionStatus.setText(R.string.settings_ai_status_testing);
+
+          chatRepository.testApiKeyConnection(
+              provider,
+              keyToTest,
+              new ResultCallback<KeyTestResult>() {
+                @Override
+                public void onSuccess(@NonNull KeyTestResult result) {
+                  if (binding == null || !isAdded()) {
+                    return;
+                  }
+                  binding.btnTestConnection.setEnabled(true);
+                  updateAiStatusBanner(result);
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                  if (binding == null || !isAdded()) {
+                    return;
+                  }
+                  binding.btnTestConnection.setEnabled(true);
+                  updateAiStatusBanner(
+                      new KeyTestResult(
+                          KeyTestResult.STATUS_PROVIDER_ERROR,
+                          provider.getId(),
+                          "Unable to reach verification service."));
+                }
+              });
+        });
+  }
+
+  private void syncAiAgentUi() {
+    if (binding == null || secureApiKeyStore == null) {
+      return;
+    }
+    boolean prevUpdating = isUpdatingUi;
+    isUpdatingUi = true;
+    try {
+      AiProviderOption selected = secureApiKeyStore.getSelectedProvider();
+      int targetRadioId = resolveRadioIdForProvider(selected);
+      if (binding.rgAiProvider.getCheckedRadioButtonId() != targetRadioId) {
+        binding.rgAiProvider.check(targetRadioId);
+      }
+
+      if (secureApiKeyStore.hasConfiguredApiKey()) {
+        AiProviderOption keyProvider = secureApiKeyStore.getConfiguredKeyProvider();
+        String masked = secureApiKeyStore.getMaskedKeySummary();
+        binding.tilApiKey.setHelperText(
+            getString(R.string.settings_ai_helper_saved, keyProvider.getDisplayName(), masked));
+      } else {
+        binding.tilApiKey.setHelperText(null);
+      }
+
+      updateAiStatusBanner(null);
+    } finally {
+      isUpdatingUi = prevUpdating;
+    }
+  }
+
+  private void updateAiStatusBanner(@Nullable KeyTestResult testResult) {
+    if (binding == null || secureApiKeyStore == null) {
+      return;
+    }
+    if (testResult != null) {
+      binding.tvAiConnectionStatus.setText(
+          getString(
+              R.string.settings_ai_status_result,
+              testResult.getStatus(),
+              testResult.getMessage()));
+      return;
+    }
+
+    AiProviderOption selected = secureApiKeyStore.getSelectedProvider();
+    if (selected != AiProviderOption.SERVER_DEFAULT && secureApiKeyStore.hasConfiguredApiKey()) {
+      String masked = secureApiKeyStore.getMaskedKeySummary();
+      binding.tvAiConnectionStatus.setText(
+          getString(
+              R.string.settings_ai_status_configured, selected.getDisplayName(), masked));
+    } else {
+      binding.tvAiConnectionStatus.setText(R.string.settings_ai_status_default);
+    }
+  }
+
+  /**
+   * Maps a provider RadioButton ID to its {@link AiProviderOption}.
+   *
+   * @param checkedId Checked RadioButton resource ID.
+   * @return Corresponding {@link AiProviderOption}.
+   */
+  @NonNull
+  public static AiProviderOption resolveProviderForRadioId(int checkedId) {
+    if (checkedId == R.id.rb_provider_gemini) {
+      return AiProviderOption.GEMINI;
+    } else if (checkedId == R.id.rb_provider_openai) {
+      return AiProviderOption.OPENAI;
+    } else {
+      return AiProviderOption.SERVER_DEFAULT;
+    }
+  }
+
+  /**
+   * Maps an {@link AiProviderOption} to its RadioButton resource ID.
+   *
+   * @param provider {@link AiProviderOption}.
+   * @return RadioButton resource ID.
+   */
+  public static int resolveRadioIdForProvider(@NonNull AiProviderOption provider) {
+    if (provider == AiProviderOption.GEMINI) {
+      return R.id.rb_provider_gemini;
+    } else if (provider == AiProviderOption.OPENAI) {
+      return R.id.rb_provider_openai;
+    } else {
+      return R.id.rb_provider_server_default;
+    }
   }
 
   /**
@@ -284,6 +475,7 @@ public class SettingsFragment extends Fragment {
       }
       FontScaleManager.applyFontScale(binding.getRoot(), scale);
       applyPreviewScale(scale);
+      syncAiAgentUi();
     } finally {
       isUpdatingUi = false;
     }

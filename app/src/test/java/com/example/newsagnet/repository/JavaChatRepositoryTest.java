@@ -5,14 +5,20 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.example.newsagnet.concurrency.AppExecutors;
 import com.example.newsagnet.concurrency.ResultCallback;
+import com.example.newsagnet.data.security.AiProviderOption;
+import com.example.newsagnet.model.KeyTestResult;
 import com.example.newsagnet.model.MessageRole;
 import com.example.newsagnet.network.ChatApiService;
 import com.example.newsagnet.network.dto.ChatRequestDto;
 import com.example.newsagnet.network.dto.ChatResponseDto;
+import com.example.newsagnet.network.dto.KeyTestRequestDto;
+import com.example.newsagnet.network.dto.KeyTestResponseDto;
 import com.example.newsagnet.network.dto.NewsSourceRefDto;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -168,6 +174,109 @@ public class JavaChatRepositoryTest {
     assertNotNull(errorRef.get());
     assertTrue(errorRef.get() instanceof IOException);
     assertEquals("Connection timed out", errorRef.get().getMessage());
+  }
+
+  @Test
+  public void testApiKeyConnection_mapsSuccessTimeoutAndOfflineSafely()
+      throws InterruptedException {
+    ChatApiService fakeService =
+        new ChatApiService() {
+          @Override
+          public Object sendMessage(
+              ChatRequestDto request,
+              kotlin.coroutines.Continuation<? super ChatResponseDto> continuation) {
+            return null;
+          }
+
+          @NonNull
+          @Override
+          public Call<ChatResponseDto> sendMessageCall(@NonNull ChatRequestDto request) {
+            throw new UnsupportedOperationException();
+          }
+
+          @NonNull
+          @Override
+          public Call<KeyTestResponseDto> testConnectionCall(
+              @Nullable String llmApiKey, @NonNull KeyTestRequestDto request) {
+            if ("timeout-key".equals(llmApiKey)) {
+              return new FailingCall<>(new SocketTimeoutException("Read timed out"));
+            }
+            if ("offline-key".equals(llmApiKey)) {
+              return new FailingCall<>(new IOException("Network unreachable"));
+            }
+            return new FakeCall<>(
+                Response.success(
+                    new KeyTestResponseDto(
+                        KeyTestResult.STATUS_SUCCESS,
+                        request.getProvider(),
+                        "Connected to GEMINI successfully.")));
+          }
+        };
+
+    JavaChatRepository repository = new JavaChatRepositoryImpl(fakeService, testExecutors);
+
+    // 1. Success case
+    CountDownLatch latch1 = new CountDownLatch(1);
+    AtomicReference<KeyTestResult> res1 = new AtomicReference<>();
+    repository.testApiKeyConnection(
+        AiProviderOption.GEMINI,
+        "valid-key-12345678",
+        new ResultCallback<KeyTestResult>() {
+          @Override
+          public void onSuccess(KeyTestResult data) {
+            res1.set(data);
+            latch1.countDown();
+          }
+
+          @Override
+          public void onError(Exception e) {
+            latch1.countDown();
+          }
+        });
+    assertTrue(latch1.await(2, TimeUnit.SECONDS));
+    assertEquals(KeyTestResult.STATUS_SUCCESS, res1.get().getStatus());
+
+    // 2. Timeout case
+    CountDownLatch latch2 = new CountDownLatch(1);
+    AtomicReference<KeyTestResult> res2 = new AtomicReference<>();
+    repository.testApiKeyConnection(
+        AiProviderOption.GEMINI,
+        "timeout-key",
+        new ResultCallback<KeyTestResult>() {
+          @Override
+          public void onSuccess(KeyTestResult data) {
+            res2.set(data);
+            latch2.countDown();
+          }
+
+          @Override
+          public void onError(Exception e) {
+            latch2.countDown();
+          }
+        });
+    assertTrue(latch2.await(2, TimeUnit.SECONDS));
+    assertEquals(KeyTestResult.STATUS_TIMEOUT, res2.get().getStatus());
+
+    // 3. Offline network failure case
+    CountDownLatch latch3 = new CountDownLatch(1);
+    AtomicReference<KeyTestResult> res3 = new AtomicReference<>();
+    repository.testApiKeyConnection(
+        AiProviderOption.OPENAI,
+        "offline-key",
+        new ResultCallback<KeyTestResult>() {
+          @Override
+          public void onSuccess(KeyTestResult data) {
+            res3.set(data);
+            latch3.countDown();
+          }
+
+          @Override
+          public void onError(Exception e) {
+            latch3.countDown();
+          }
+        });
+    assertTrue(latch3.await(2, TimeUnit.SECONDS));
+    assertEquals(KeyTestResult.STATUS_PROVIDER_ERROR, res3.get().getStatus());
   }
 
   // --- Fake Call helpers for Retrofit Call testing ---

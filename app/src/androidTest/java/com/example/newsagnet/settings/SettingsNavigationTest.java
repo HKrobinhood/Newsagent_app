@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import androidx.test.core.app.ActivityScenario;
@@ -16,6 +17,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
 import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
+import com.example.newsagnet.data.security.AiProviderOption;
+import com.example.newsagnet.data.security.SecureApiKeyStore;
 import com.example.newsagnet.model.NewsSourceItem;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import org.junit.Before;
@@ -35,6 +38,7 @@ public class SettingsNavigationTest {
     LocalPreferencesRepository repo = LocalPreferencesRepository.getInstance(context);
     repo.resetSourcesToDefault(NewsSourceItem.getDefaultSourceIds());
     repo.setFontScale(1.00f);
+    SecureApiKeyStore.getInstance(context).removeApiKey();
   }
 
   @Test
@@ -215,6 +219,65 @@ public class SettingsNavigationTest {
             assertTrue(
                 "Extra Large text size should be scaled up relative to Medium",
                 extraLargePx > mediumPx * 1.20f);
+          });
+    }
+  }
+
+  @Test
+  public void apiKeySaveMaskPersistAndRemove_withAndroidKeystoreAesGcm() {
+    Context context = ApplicationProvider.getApplicationContext();
+    SecureApiKeyStore keyStore = SecureApiKeyStore.getInstance(context);
+    String testSecret = "AIzaSyHardwareKeystoreTestKey5678";
+
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            RadioGroup providerGroup = activity.findViewById(R.id.rg_ai_provider);
+            providerGroup.check(R.id.rb_provider_gemini);
+
+            EditText etApiKey = activity.findViewById(R.id.et_api_key);
+            etApiKey.setText(testSecret);
+
+            activity.findViewById(R.id.btn_save_api_key).performClick();
+
+            // 1. Input box must be cleared immediately so full key is never shown on screen
+            assertEquals("", etApiKey.getText().toString());
+
+            // 2. Status banner shows masked status, never full plaintext key
+            TextView tvStatus = activity.findViewById(R.id.tv_ai_connection_status);
+            String statusText = tvStatus.getText().toString();
+            assertTrue(statusText.contains("••••5678"));
+            assertFalse(statusText.contains(testSecret));
+
+            // 3. Hardware Keystore decrypts accurately for in-flight requests
+            assertTrue(keyStore.hasConfiguredApiKey());
+            assertEquals(AiProviderOption.GEMINI, keyStore.getSelectedProvider());
+            assertEquals(testSecret, keyStore.getDecryptedApiKey());
+          });
+
+      // Simulate restart / recreation and verify encrypted persistence survives
+      scenario.recreate();
+
+      scenario.onActivity(
+          activity -> {
+            activity.getSupportFragmentManager().executePendingTransactions();
+            assertTrue(keyStore.hasConfiguredApiKey());
+            assertEquals(testSecret, keyStore.getDecryptedApiKey());
+
+            TextView tvStatus = activity.findViewById(R.id.tv_ai_connection_status);
+            assertTrue(tvStatus.getText().toString().contains("••••5678"));
+            assertFalse(tvStatus.getText().toString().contains(testSecret));
+
+            // Click Remove Key and verify key is wiped and mode resets to Server Default
+            activity.findViewById(R.id.btn_remove_api_key).performClick();
+            assertFalse(keyStore.hasConfiguredApiKey());
+            assertEquals(AiProviderOption.SERVER_DEFAULT, keyStore.getSelectedProvider());
+            assertEquals(
+                activity.getString(R.string.settings_ai_status_default),
+                tvStatus.getText().toString());
           });
     }
   }

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.security.AiProviderOption;
 import org.junit.Test;
 
 /**
@@ -39,6 +40,29 @@ public class SettingsFragmentTest {
     assertEquals(R.id.rb_font_medium, SettingsFragment.resolveRadioIdForScale(1.00f));
     assertEquals(R.id.rb_font_large, SettingsFragment.resolveRadioIdForScale(1.15f));
     assertEquals(R.id.rb_font_extra_large, SettingsFragment.resolveRadioIdForScale(1.30f));
+  }
+
+  @Test
+  public void resolveProviderAndRadioId_mapsAllProvidersBidirectionally() {
+    assertEquals(
+        AiProviderOption.SERVER_DEFAULT,
+        SettingsFragment.resolveProviderForRadioId(R.id.rb_provider_server_default));
+    assertEquals(
+        AiProviderOption.GEMINI,
+        SettingsFragment.resolveProviderForRadioId(R.id.rb_provider_gemini));
+    assertEquals(
+        AiProviderOption.OPENAI,
+        SettingsFragment.resolveProviderForRadioId(R.id.rb_provider_openai));
+
+    assertEquals(
+        R.id.rb_provider_server_default,
+        SettingsFragment.resolveRadioIdForProvider(AiProviderOption.SERVER_DEFAULT));
+    assertEquals(
+        R.id.rb_provider_gemini,
+        SettingsFragment.resolveRadioIdForProvider(AiProviderOption.GEMINI));
+    assertEquals(
+        R.id.rb_provider_openai,
+        SettingsFragment.resolveRadioIdForProvider(AiProviderOption.OPENAI));
   }
 
   @Test

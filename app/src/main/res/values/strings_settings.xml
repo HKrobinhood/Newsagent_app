@@ -48,7 +48,11 @@
     <string name="settings_ai_provider_openai">OpenAI</string>
     <string name="settings_ai_key_hint">Enter personal API Key (hidden by default)</string>
     <string name="settings_ai_status_default">Connection Status: Using Server Default</string>
-    <string name="settings_ai_status_configured">Connection Status: Personal Key Configured (Masked)</string>
+    <string name="settings_ai_status_configured">Connection Status: Personal Key Configured (%1$s · %2$s)</string>
+    <string name="settings_ai_status_testing">Connection Status: Testing connection…</string>
+    <string name="settings_ai_status_result">Connection Status: %1$s — %2$s</string>
+    <string name="settings_ai_error_empty_key">Please enter a valid API Key before saving.</string>
+    <string name="settings_ai_helper_saved">Saved on this device (%1$s · %2$s). Enter a new key to replace.</string>
     <string name="settings_btn_save_key">Save Key</string>
     <string name="settings_btn_remove_key">Remove Key</string>
     <string name="settings_btn_test_connection">Test Connection</string>

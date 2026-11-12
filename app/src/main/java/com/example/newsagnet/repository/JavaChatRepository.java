@@ -3,6 +3,8 @@ package com.example.newsagnet.repository;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.example.newsagnet.concurrency.ResultCallback;
+import com.example.newsagnet.data.security.AiProviderOption;
+import com.example.newsagnet.model.KeyTestResult;
 import java.util.Collection;
 
 /**
@@ -43,5 +45,24 @@ public interface JavaChatRepository {
       @Nullable Collection<String> allowedSourceIds,
       @NonNull ResultCallback<AgentChatResult> callback) {
     sendMessage(message, sessionId, mode, callback);
+  }
+
+  /**
+   * Tests LLM provider connectivity via the backend `/api/v1/ai/test-connection` endpoint without
+   * storing or echoing the API key.
+   *
+   * @param provider Selected {@link AiProviderOption}.
+   * @param apiKey Ephemeral personal API key (may be null when testing `SERVER_DEFAULT`).
+   * @param callback Callback delivering {@link KeyTestResult} on the main UI thread.
+   */
+  default void testApiKeyConnection(
+      @NonNull AiProviderOption provider,
+      @Nullable String apiKey,
+      @NonNull ResultCallback<KeyTestResult> callback) {
+    callback.onSuccess(
+        new KeyTestResult(
+            KeyTestResult.STATUS_SUCCESS,
+            provider.getId(),
+            "Connection test completed."));
   }
 }

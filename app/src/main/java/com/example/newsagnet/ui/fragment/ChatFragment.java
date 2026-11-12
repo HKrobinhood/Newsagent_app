@@ -74,7 +74,7 @@ public class ChatFragment extends Fragment
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     Log.d(TAG, "onCreate: Initializing ChatRepository");
-    chatRepository = new JavaChatRepositoryImpl();
+    chatRepository = new JavaChatRepositoryImpl(requireContext());
   }
 
   @Nullable

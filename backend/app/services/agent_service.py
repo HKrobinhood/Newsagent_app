@@ -63,13 +63,19 @@ class AgentService:
         return "title_search"
 
     async def process_chat(
-        self, request: ChatRequest, db: AsyncSession
+        self,
+        request: ChatRequest,
+        db: AsyncSession,
+        llm_provider: str | None = None,
+        llm_api_key: str | None = None,
     ) -> ChatResponse:
         """Process user inquiry across Dual-Mode pipeline.
 
         Args:
             request: Validated ChatRequest payload.
             db: Database session for citation lookups.
+            llm_provider: Ephemeral LLM provider identifier (if supplied).
+            llm_api_key: Ephemeral user-provided LLM API key (never persisted).
 
         Returns:
             ChatResponse with answer, citations, mode_used, and session ID.
@@ -77,8 +83,12 @@ class AgentService:
         session_id = request.session_id or str(uuid.uuid4())
         user_msg = request.message.strip()
 
+        effective_provider = llm_provider or request.llm_provider
         repo = NewsRepository(db)
-        llm_client = get_llm_client()
+        llm_client = get_llm_client(
+            provider=effective_provider,
+            api_key=llm_api_key,
+        )
         web_search = get_web_search_client()
 
         target_mode = self.determine_mode(user_msg, request.mode)
