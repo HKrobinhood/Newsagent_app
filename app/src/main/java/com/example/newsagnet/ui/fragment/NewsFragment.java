@@ -527,12 +527,23 @@ public class NewsFragment extends Fragment
     String url = article.getOriginalUrl();
     Log.d(TAG, "onNewsItemClick: Opening URL via Intent: " + url);
     if (url != null && !url.trim().isEmpty()) {
+      String cleanUrl = url.trim();
+      if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+        cleanUrl = "https://" + cleanUrl;
+      }
       try {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(cleanUrl));
         startActivity(intent);
         HistoryRepository.recordOpened(requireContext(), article);
       } catch (Exception e) {
-        Log.e(TAG, "Failed to launch intent for URL: " + url, e);
+        Log.e(TAG, "Failed to launch intent for URL: " + cleanUrl, e);
+        if (getContext() != null) {
+          android.widget.Toast.makeText(
+                  getContext(),
+                  getString(R.string.news_link_open_failed),
+                  android.widget.Toast.LENGTH_SHORT)
+              .show();
+        }
       }
     }
   }

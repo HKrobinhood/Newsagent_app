@@ -13,6 +13,7 @@ from app.services.rss_normalizer import (
     canonicalize_url,
     clean_title,
     infer_category,
+    is_commercial_affiliate_url,
     parse_published_date,
 )
 
@@ -191,7 +192,7 @@ class BaseCollector(ABC):
 
             raw_link = getattr(entry, "link", "")
             canonical_url = canonicalize_url(raw_link)
-            if not canonical_url:
+            if not canonical_url or is_commercial_affiliate_url(canonical_url):
                 continue
 
             pub_date = parse_published_date(entry)

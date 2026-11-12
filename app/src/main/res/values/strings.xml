@@ -13,6 +13,7 @@
     <string name="news_retry">Retry</string>
     <string name="news_empty">No news found for this category.</string>
     <string name="news_open_in_browser">Open original news article in external browser</string>
+    <string name="news_link_open_failed">Unable to open web browser for this article.</string>
 
     <string name="category_all">ALL</string>
     <string name="category_world">WORLD</string>
