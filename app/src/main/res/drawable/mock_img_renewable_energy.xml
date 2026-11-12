@@ -1,0 +1,34 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="400dp"
+    android:height="225dp"
+    android:viewportWidth="400"
+    android:viewportHeight="225">
+    <!-- Clean Energy Teal Gradient -->
+    <path android:pathData="M0,0h400v225h-400z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="0"
+                android:endY="225"
+                android:type="linear">
+                <item android:color="#FF064E3B" android:offset="0.0" />
+                <item android:color="#FF059669" android:offset="0.6" />
+                <item android:color="#FF34D399" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Wind Turbines & Rolling Hills -->
+    <path
+        android:fillColor="#FF022C22"
+        android:pathData="M0,225L0,180 Q100,150 200,180 Q300,160 400,180 L400,225 Z" />
+    <path
+        android:strokeColor="#FF6EE7B7"
+        android:strokeWidth="2"
+        android:pathData="M150,180 L150,110 M150,110 L130,90 M150,110 L170,90 M150,110 L150,135" />
+    <path
+        android:strokeColor="#FF6EE7B7"
+        android:strokeWidth="2"
+        android:pathData="M270,175 L270,120 M270,120 L255,105 M270,120 L285,105 M270,120 L270,140" />
+</vector>

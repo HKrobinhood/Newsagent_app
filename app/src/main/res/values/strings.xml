@@ -38,4 +38,10 @@
     <string name="account_sign_out_confirm_message">Are you sure you want to sign out? Your local preferences and reading history will remain intact on this device.</string>
     <string name="account_sign_out_confirm_positive">Sign out</string>
     <string name="account_sign_out_confirm_negative">Cancel</string>
+
+    <!-- Editorial News Feed Strings -->
+    <string name="news_featured_badge">COVER STORY</string>
+    <string name="news_recommended_header">Recommended</string>
+    <string name="news_recommended_sub">Curated Stories</string>
+    <string name="news_latest_stories_header">Latest Stories</string>
 </resources>

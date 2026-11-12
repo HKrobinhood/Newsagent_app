@@ -111,6 +111,10 @@ public class NewsFragment extends Fragment
     setupHeaderActions();
     setupScrollPagination();
 
+    java.text.SimpleDateFormat dateFormat =
+        new java.text.SimpleDateFormat("EEEE, MMMM d", java.util.Locale.ENGLISH);
+    binding.tvHeaderDate.setText(dateFormat.format(new java.util.Date()));
+
     applyUserFontScale(preferencesRepository.getFontScale());
 
     // Restore persistent user category preference (COMP7506 Ch6 SharedPreferences)
@@ -162,9 +166,18 @@ public class NewsFragment extends Fragment
   }
 
   private void setupRecyclerView() {
-    layoutManager = new LinearLayoutManager(requireContext());
-    newsAdapter = new NewsAdapter(this);
+    androidx.recyclerview.widget.GridLayoutManager gridLayoutManager =
+        new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 2);
+    newsAdapter = new NewsAdapter(this, true);
+    gridLayoutManager.setSpanSizeLookup(
+        new androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+          @Override
+          public int getSpanSize(int position) {
+            return newsAdapter.getSpanSize(position);
+          }
+        });
 
+    layoutManager = gridLayoutManager;
     binding.recyclerNews.setLayoutManager(layoutManager);
     binding.recyclerNews.setAdapter(newsAdapter);
     binding.recyclerNews.setHasFixedSize(true);
@@ -345,13 +358,15 @@ public class NewsFragment extends Fragment
             currentPage = 1;
             hasMore = result.isHasMore();
 
-            List<NewsArticle> filtered = prefs.filterArticles(result.getArticles());
+            List<NewsArticle> editorialFeed =
+                com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+                    result.getArticles(), prefs, currentCategory);
             articleDataset.clear();
-            articleDataset.addAll(filtered);
+            articleDataset.addAll(editorialFeed);
 
             if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
-              renderData(result.getTotal(), false);
+              renderData(editorialFeed.size(), false);
             }
           }
 
@@ -362,7 +377,19 @@ public class NewsFragment extends Fragment
             isLoading = false;
             isRefreshing = false;
 
-            if (binding != null) {
+            // In N1 prototype, provide editorial mock feed if server is not reachable
+            List<NewsArticle> fallbackFeed =
+                com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+                    new ArrayList<>(), prefs, currentCategory);
+
+            if (!fallbackFeed.isEmpty()) {
+              articleDataset.clear();
+              articleDataset.addAll(fallbackFeed);
+              if (binding != null) {
+                binding.swipeRefresh.setRefreshing(false);
+                renderData(fallbackFeed.size(), false);
+              }
+            } else if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
               if (articleDataset.isEmpty()) {
                 showErrorState(throwable.getMessage());

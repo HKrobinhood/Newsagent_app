@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="400dp"
+    android:height="225dp"
+    android:viewportWidth="400"
+    android:viewportHeight="225">
+    <!-- Sunset Glow Gradient -->
+    <path android:pathData="M0,0h400v225h-400z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="0"
+                android:endY="225"
+                android:type="linear">
+                <item android:color="#FF0C4A6E" android:offset="0.0" />
+                <item android:color="#FF0284C7" android:offset="0.5" />
+                <item android:color="#FFF59E0B" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Skyline & Harbor Bridge -->
+    <path
+        android:fillColor="#FF0F172A"
+        android:pathData="M0,225L0,190 Q100,160 200,190 Q300,160 400,190 L400,225 Z" />
+    <path
+        android:strokeColor="#FF1E293B"
+        android:strokeWidth="3"
+        android:pathData="M20,190 L120,110 L220,190 M120,110 L120,190 M70,150 L70,190 M170,150 L170,190" />
+</vector>

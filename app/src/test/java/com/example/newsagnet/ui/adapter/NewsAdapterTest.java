@@ -1,6 +1,7 @@
 package com.example.newsagnet.ui.adapter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -111,5 +112,87 @@ public class NewsAdapterTest {
     assertNull(adapter.getItem(-10));
     assertNull(adapter.getItem(2));
     assertNull(adapter.getItem(100));
+  }
+
+  @Test
+  public void testEditorialLayout_partitionsIntoFeaturedRecommendedAndLatest() {
+    List<NewsArticle> editorialArticles =
+        com.example.newsagnet.data.mock.MockEditorialNewsProvider.getEditorialMockArticles();
+    assertTrue("Mock editorial list should have at least 10 articles", editorialArticles.size() >= 10);
+
+    adapter.setEditorialLayout(true);
+    adapter.submitList(editorialArticles);
+
+    // Position 0: Featured Cover Story
+    assertEquals(NewsAdapter.VIEW_TYPE_FEATURED, adapter.getItemViewType(0));
+    assertEquals(2, adapter.getSpanSize(0));
+    NewsArticle featured = adapter.getItem(0);
+    assertNotNull(featured);
+    assertEquals("mock-editorial-featured", featured.getId());
+
+    // Position 1: Recommended Carousel
+    assertEquals(NewsAdapter.VIEW_TYPE_RECOMMENDED, adapter.getItemViewType(1));
+    assertEquals(2, adapter.getSpanSize(1));
+
+    // Position 2 & 3: Medium Cards side-by-side
+    assertEquals(NewsAdapter.VIEW_TYPE_MEDIUM, adapter.getItemViewType(2));
+    assertEquals(1, adapter.getSpanSize(2));
+    assertEquals(NewsAdapter.VIEW_TYPE_MEDIUM, adapter.getItemViewType(3));
+    assertEquals(1, adapter.getSpanSize(3));
+
+    // Position 4: Large Card
+    assertEquals(NewsAdapter.VIEW_TYPE_LARGE, adapter.getItemViewType(4));
+    assertEquals(2, adapter.getSpanSize(4));
+
+    // Position 5 & 6: Compact Cards
+    assertEquals(NewsAdapter.VIEW_TYPE_COMPACT, adapter.getItemViewType(5));
+    assertEquals(2, adapter.getSpanSize(5));
+    assertEquals(NewsAdapter.VIEW_TYPE_COMPACT, adapter.getItemViewType(6));
+    assertEquals(2, adapter.getSpanSize(6));
+  }
+
+  @Test
+  public void testDegradation_articleWithoutImageReturnsTextOnly() {
+    List<NewsArticle> articles =
+        com.example.newsagnet.data.mock.MockEditorialNewsProvider.getEditorialMockArticles();
+    adapter.setEditorialLayout(true);
+    adapter.submitList(articles);
+
+    // In MockEditorialNewsProvider, latTxt1 has no image
+    // Find text only item and assert VIEW_TYPE_TEXT_ONLY
+    boolean foundTextOnly = false;
+    for (int i = 0; i < adapter.getItemCount(); i++) {
+      if (adapter.getItemViewType(i) == NewsAdapter.VIEW_TYPE_TEXT_ONLY) {
+        foundTextOnly = true;
+        assertEquals(2, adapter.getSpanSize(i));
+        NewsArticle a = adapter.getItem(i);
+        assertNotNull(a);
+        assertFalse(a.hasImage());
+        break;
+      }
+    }
+    assertTrue("Should contain degraded Text-Only card for image-less news", foundTextOnly);
+  }
+
+  @Test
+  public void testEditorialFeed_respectsCategoryAndMediaPreferences() {
+    com.example.newsagnet.data.prefs.UserPreferences prefs =
+        new com.example.newsagnet.data.prefs.UserPreferences(
+            new java.util.LinkedHashSet<>(Arrays.asList("bbc", "cnn")),
+            1.0f,
+            1,
+            System.currentTimeMillis());
+
+    List<NewsArticle> bbcCnnWorldFeed =
+        com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+            new ArrayList<>(), prefs, com.example.newsagnet.model.NewsCategory.WORLD);
+
+    assertFalse("Feed should not be empty for bbc/cnn world", bbcCnnWorldFeed.isEmpty());
+    for (NewsArticle a : bbcCnnWorldFeed) {
+      assertEquals("world", a.getCategory().toLowerCase());
+      assertTrue(
+          "Publisher must be bbc or cnn",
+          "bbc".equals(a.getSourceId()) || "cnn".equals(a.getSourceId()));
+    }
   }
 }

@@ -197,7 +197,7 @@ public class GlobeFragment extends Fragment
   }
 
   private void setupRecyclerView() {
-    geoNewsAdapter = new NewsAdapter(this);
+    geoNewsAdapter = new NewsAdapter(this, false);
     binding.recyclerGeoNews.setLayoutManager(new LinearLayoutManager(requireContext()));
     binding.recyclerGeoNews.setAdapter(geoNewsAdapter);
   }

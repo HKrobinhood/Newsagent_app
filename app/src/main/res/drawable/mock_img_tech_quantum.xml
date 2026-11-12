@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="400dp"
+    android:height="225dp"
+    android:viewportWidth="400"
+    android:viewportHeight="225">
+    <!-- Deep Cyber Space Gradient -->
+    <path android:pathData="M0,0h400v225h-400z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="400"
+                android:endY="225"
+                android:type="linear">
+                <item android:color="#FF082F49" android:offset="0.0" />
+                <item android:color="#FF0369A1" android:offset="0.5" />
+                <item android:color="#FF0284C7" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Geometric Quantum Circuit Lattice -->
+    <path
+        android:strokeColor="#6638BDF8"
+        android:strokeWidth="2"
+        android:pathData="M50,180 L150,80 L250,150 L350,50 M150,80 L250,50 M250,150 L350,180" />
+    <path
+        android:fillColor="#FF38BDF8"
+        android:pathData="M146,80a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M246,150a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M346,50a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+</vector>

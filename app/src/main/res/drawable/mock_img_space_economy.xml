@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="400dp"
+    android:height="225dp"
+    android:viewportWidth="400"
+    android:viewportHeight="225">
+    <!-- Nebula Space Gradient -->
+    <path android:pathData="M0,0h400v225h-400z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="400"
+                android:endY="225"
+                android:type="linear">
+                <item android:color="#FF0F172A" android:offset="0.0" />
+                <item android:color="#FF4C1D95" android:offset="0.5" />
+                <item android:color="#FF8B5CF6" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Celestial Orbit -->
+    <path
+        android:strokeColor="#55C4B5FD"
+        android:strokeWidth="2"
+        android:pathData="M80,112 A120,40 0 1,0 320,112 A120,40 0 1,0 80,112" />
+    <!-- Planet / Station Sphere -->
+    <path
+        android:fillColor="#FFEDE9FE"
+        android:pathData="M200,87a25,25 0 1,0 50,0a25,25 0 1,0 -50,0" />
+</vector>

@@ -18,18 +18,33 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
+            android:id="@+id/tv_header_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="normal"
+            android:maxLines="1"
+            android:ellipsize="end"
+            app:layout_constraintEnd_toStartOf="@id/btn_refresh"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Thursday, November 12th" />
+
+        <TextView
             android:id="@+id/tv_header_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
             android:text="@string/news_title"
             android:textColor="@color/white"
-            android:textSize="22sp"
+            android:textSize="24sp"
             android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintEnd_toStartOf="@id/btn_refresh"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/tv_header_date" />
 
         <TextView
             android:id="@+id/tv_header_subtitle"

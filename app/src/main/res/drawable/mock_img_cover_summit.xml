@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="400dp"
+    android:height="225dp"
+    android:viewportWidth="400"
+    android:viewportHeight="225">
+    <!-- Sky Twilight Gradient -->
+    <path android:pathData="M0,0h400v225h-400z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="200"
+                android:startY="0"
+                android:endX="200"
+                android:endY="225"
+                android:type="linear">
+                <item android:color="#FF1E1B4B" android:offset="0.0" />
+                <item android:color="#FF3730A3" android:offset="0.4" />
+                <item android:color="#FF6366F1" android:offset="0.7" />
+                <item android:color="#FFF472B6" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Coastal Architecture Silhouette (Inspired by Lemon News Cover) -->
+    <path
+        android:fillColor="#FF0F172A"
+        android:pathData="M0,225L0,185 Q80,170 140,185 Q200,120 260,185 Q320,150 400,185 L400,225 Z" />
+    <!-- Modern Pavilion Dome Silhouette -->
+    <path
+        android:fillColor="#FF1E293B"
+        android:pathData="M180,185 Q230,80 280,185 Z" />
+    <path
+        android:fillColor="#FF334155"
+        android:pathData="M270,185 Q310,110 350,185 Z" />
+    <!-- Water Reflection Horizon -->
+    <path
+        android:fillColor="#33FFFFFF"
+        android:pathData="M0,195h400v30h-400z" />
+</vector>
