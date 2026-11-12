@@ -8,7 +8,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.news_repository import NewsRepository
-from app.schemas.news import NewsArticleCreate, NewsSourceCreate
+from app.schemas.news import ArticleMediaCreate, NewsArticleCreate, NewsSourceCreate
 from app.services.collectors import ALL_COLLECTORS
 from app.services.collectors.base import BaseCollector
 
@@ -99,8 +99,27 @@ class NewsCollectorService:
                 longitude=raw.longitude,
             )
             try:
-                await repo.create_article(article_in)
+                created_article = await repo.create_article(article_in)
                 inserted += 1
+                if raw.image_url:
+                    try:
+                        await repo.create_media(
+                            created_article.id,
+                            ArticleMediaCreate(
+                                image_url=raw.image_url,
+                                mime_type=raw.image_mime_type,
+                                width=raw.image_width,
+                                height=raw.image_height,
+                                image_source=raw.source_id,
+                                credit=raw.image_credit,
+                            ),
+                        )
+                    except Exception as media_err:
+                        logger.warning(
+                            "Failed persisting media for article '%s': %s",
+                            raw.title,
+                            media_err,
+                        )
             except Exception as e:
                 logger.warning("Failed inserting article '%s': %s", raw.title, e)
                 duplicates += 1
