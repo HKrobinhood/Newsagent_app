@@ -26,6 +26,10 @@ class ChatRequest(BaseModel):
         default="auto",
         description="Execution mode: auto, title_search, or web_verification",
     )
+    source_ids: list[str] | None = Field(
+        None,
+        description="Optional list of allowed news source IDs",
+    )
 
 
 class ChatResponse(BaseModel):

@@ -1,47 +1,68 @@
 package com.example.newsagnet.ui.fragment;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.FontScaleOption;
+import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
+import com.example.newsagnet.data.prefs.UserPreferences;
+import com.example.newsagnet.data.prefs.UserPreferencesRepository;
 import com.example.newsagnet.databinding.FragmentSettingsBinding;
+import com.example.newsagnet.model.NewsSourceItem;
+import com.example.newsagnet.repository.JavaNewsRepository;
+import com.example.newsagnet.repository.JavaNewsRepositoryImpl;
+import com.example.newsagnet.repository.NewsCallback;
+import com.example.newsagnet.ui.theme.FontScaleManager;
+import com.google.android.material.checkbox.MaterialCheckBox;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * SettingsFragment hosts the unified User Settings screen with four sections: Account, News
  * Sources, Appearance (Text Size with live preview), and AI Agent API Key Configuration.
  *
- * <p>Conforms to COMP7506 Ch4 (Mobile App Lifecycle), Ch5 (XML Layouts & Material Components), and
- * Ch6 (Fragment Lifecycle, Navigation, and State Restoration).
+ * <p>Conforms to COMP7506 Ch3 (Java OOP & Repository Pattern), Ch4 (Mobile App Lifecycle), Ch5 (XML
+ * Layouts & Material Components), Ch6 (Fragment Lifecycle, SharedPreferences, State Restoration),
+ * and Ch7 (Asynchronous Concurrency).
  */
 public class SettingsFragment extends Fragment {
 
   private static final String TAG = "SettingsFragment";
 
-  private static final String STATE_FONT_CHECKED_ID = "state_font_checked_id";
   private static final String STATE_PROVIDER_CHECKED_ID = "state_provider_checked_id";
-  private static final String STATE_CB_BBC = "state_cb_bbc";
-  private static final String STATE_CB_CNN = "state_cb_cnn";
-  private static final String STATE_CB_ALJAZEERA = "state_cb_aljazeera";
-  private static final String STATE_CB_FOX = "state_cb_fox";
 
-  public static final float SCALE_SMALL = 0.90f;
-  public static final float SCALE_MEDIUM = 1.00f;
-  public static final float SCALE_LARGE = 1.15f;
-  public static final float SCALE_EXTRA_LARGE = 1.30f;
+  public static final float SCALE_SMALL = FontScaleOption.SMALL.getScale();
+  public static final float SCALE_MEDIUM = FontScaleOption.MEDIUM.getScale();
+  public static final float SCALE_LARGE = FontScaleOption.LARGE.getScale();
+  public static final float SCALE_EXTRA_LARGE = FontScaleOption.EXTRA_LARGE.getScale();
 
   private static final float BASE_PREVIEW_HEADLINE_SP = 16f;
   private static final float BASE_PREVIEW_BODY_SP = 14f;
   private static final float BASE_PREVIEW_META_SP = 12f;
 
   private FragmentSettingsBinding binding;
+  private UserPreferencesRepository preferencesRepository;
+  private JavaNewsRepository newsRepository;
+  private final Map<String, MaterialCheckBox> dynamicSourceCheckBoxes = new LinkedHashMap<>();
+  private final Set<String> availableSourceIds =
+      new LinkedHashSet<>(NewsSourceItem.getDefaultSourceIds());
+  private boolean isUpdatingUi = false;
   private float currentPreviewScale = SCALE_MEDIUM;
 
   /**
@@ -63,7 +84,9 @@ public class SettingsFragment extends Fragment {
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    Log.d(TAG, "onCreate: Initializing SettingsFragment");
+    Log.d(TAG, "onCreate: Initializing SettingsFragment repositories");
+    preferencesRepository = LocalPreferencesRepository.getInstance(requireContext());
+    newsRepository = new JavaNewsRepositoryImpl();
   }
 
   @Nullable
@@ -80,18 +103,22 @@ public class SettingsFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     super.onViewCreated(view, savedInstanceState);
-    Log.d(TAG, "onViewCreated: Configuring Settings sections and navigation callbacks");
+    Log.d(TAG, "onViewCreated: Configuring Settings sections and loading persistent preferences");
 
     setupHeaderNavigation();
     setupNewsSourcesSection();
     setupAppearanceSection();
     setupAiAgentSection();
 
+    syncUiFromPreferences();
+
     if (savedInstanceState != null) {
-      restoreUiState(savedInstanceState);
-    } else {
-      applyPreviewScale(SCALE_MEDIUM);
+      int providerCheckedId =
+          savedInstanceState.getInt(STATE_PROVIDER_CHECKED_ID, R.id.rb_provider_server_default);
+      binding.rgAiProvider.check(providerCheckedId);
     }
+
+    fetchBackendNewsSources();
   }
 
   private void setupHeaderNavigation() {
@@ -107,27 +134,100 @@ public class SettingsFragment extends Fragment {
   }
 
   private void setupNewsSourcesSection() {
+    CompoundButton.OnCheckedChangeListener sourceToggleListener =
+        (buttonView, isChecked) -> {
+          if (isUpdatingUi) {
+            return;
+          }
+          String sourceId = resolveSourceIdForCheckBoxId(buttonView.getId());
+          if (sourceId != null) {
+            Log.d(TAG, "Media source toggled: " + sourceId + " -> " + isChecked);
+            preferencesRepository.setSourceEnabled(sourceId, isChecked);
+          }
+        };
+
+    binding.cbSourceBbc.setOnCheckedChangeListener(sourceToggleListener);
+    binding.cbSourceCnn.setOnCheckedChangeListener(sourceToggleListener);
+    binding.cbSourceAljazeera.setOnCheckedChangeListener(sourceToggleListener);
+    binding.cbSourceFox.setOnCheckedChangeListener(sourceToggleListener);
+
     binding.btnSourcesSelectAll.setOnClickListener(
         v -> {
           Log.d(TAG, "Select All news sources clicked");
-          setAllSourcesChecked(true);
+          preferencesRepository.selectAllSources(availableSourceIds);
+          syncUiFromPreferences();
         });
 
     binding.btnSourcesReset.setOnClickListener(
         v -> {
           Log.d(TAG, "Reset news sources to default clicked");
-          setAllSourcesChecked(true);
+          preferencesRepository.resetSourcesToDefault(availableSourceIds);
+          syncUiFromPreferences();
         });
   }
 
-  private void setAllSourcesChecked(boolean checked) {
+  @Nullable
+  private String resolveSourceIdForCheckBoxId(int viewId) {
+    if (viewId == R.id.cb_source_bbc) {
+      return NewsSourceItem.SOURCE_BBC;
+    } else if (viewId == R.id.cb_source_cnn) {
+      return NewsSourceItem.SOURCE_CNN;
+    } else if (viewId == R.id.cb_source_aljazeera) {
+      return NewsSourceItem.SOURCE_ALJAZEERA;
+    } else if (viewId == R.id.cb_source_fox) {
+      return NewsSourceItem.SOURCE_FOX;
+    }
+    return null;
+  }
+
+  private void fetchBackendNewsSources() {
+    newsRepository.getNewsSources(
+        new NewsCallback<List<NewsSourceItem>>() {
+          @Override
+          public void onSuccess(@NonNull List<NewsSourceItem> sources) {
+            if (binding == null || !isAdded()) {
+              return;
+            }
+            List<String> ids = NewsSourceItem.extractIds(sources);
+            availableSourceIds.addAll(ids);
+            preferencesRepository.reconcileAvailableSources(availableSourceIds);
+            renderDynamicSourcesIfAny(sources);
+            syncUiFromPreferences();
+          }
+
+          @Override
+          public void onError(@NonNull Throwable throwable) {
+            Log.w(TAG, "Using default news sources fallback: " + throwable.getMessage());
+          }
+        });
+  }
+
+  private void renderDynamicSourcesIfAny(@NonNull List<NewsSourceItem> sources) {
     if (binding == null) {
       return;
     }
-    binding.cbSourceBbc.setChecked(checked);
-    binding.cbSourceCnn.setChecked(checked);
-    binding.cbSourceAljazeera.setChecked(checked);
-    binding.cbSourceFox.setChecked(checked);
+    Set<String> builtInIds = NewsSourceItem.getDefaultSourceIds();
+    for (NewsSourceItem item : sources) {
+      String sourceId = item.getId();
+      if (builtInIds.contains(sourceId) || dynamicSourceCheckBoxes.containsKey(sourceId)) {
+        continue;
+      }
+      MaterialCheckBox checkBox = new MaterialCheckBox(requireContext());
+      checkBox.setText(item.getName());
+      checkBox.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+      checkBox.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f);
+      checkBox.setButtonTintList(
+          ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.primary_cyan)));
+      checkBox.setChecked(preferencesRepository.getPreferences().isSourceEnabled(sourceId));
+      checkBox.setOnCheckedChangeListener(
+          (btn, isChecked) -> {
+            if (!isUpdatingUi) {
+              preferencesRepository.setSourceEnabled(sourceId, isChecked);
+            }
+          });
+      dynamicSourceCheckBoxes.put(sourceId, checkBox);
+      binding.layoutSourcesContainer.addView(checkBox);
+    }
   }
 
   private void setupAppearanceSection() {
@@ -135,7 +235,14 @@ public class SettingsFragment extends Fragment {
         (group, checkedId) -> {
           float scale = resolveScaleForRadioId(checkedId);
           Log.d(TAG, "Font size preference changed: scale=" + scale);
+          if (!isUpdatingUi) {
+            preferencesRepository.setFontScale(scale);
+          }
           applyPreviewScale(scale);
+          if (binding != null) {
+            FontScaleManager.applyFontScale(binding.getRoot(), scale);
+            applyPreviewScale(scale);
+          }
         });
   }
 
@@ -148,6 +255,38 @@ public class SettingsFragment extends Fragment {
             binding.tvAiConnectionStatus.setText(R.string.settings_ai_status_default);
           }
         });
+  }
+
+  /**
+   * Synchronizes checkboxes, font radio selection, and font scaling from {@link
+   * UserPreferencesRepository}.
+   */
+  public void syncUiFromPreferences() {
+    if (binding == null || preferencesRepository == null) {
+      return;
+    }
+    isUpdatingUi = true;
+    try {
+      UserPreferences prefs = preferencesRepository.getPreferences();
+      binding.cbSourceBbc.setChecked(prefs.isSourceEnabled(NewsSourceItem.SOURCE_BBC));
+      binding.cbSourceCnn.setChecked(prefs.isSourceEnabled(NewsSourceItem.SOURCE_CNN));
+      binding.cbSourceAljazeera.setChecked(prefs.isSourceEnabled(NewsSourceItem.SOURCE_ALJAZEERA));
+      binding.cbSourceFox.setChecked(prefs.isSourceEnabled(NewsSourceItem.SOURCE_FOX));
+
+      for (Map.Entry<String, MaterialCheckBox> entry : dynamicSourceCheckBoxes.entrySet()) {
+        entry.getValue().setChecked(prefs.isSourceEnabled(entry.getKey()));
+      }
+
+      float scale = prefs.getFontScale();
+      int radioId = resolveRadioIdForScale(scale);
+      if (binding.rgFontSize.getCheckedRadioButtonId() != radioId) {
+        binding.rgFontSize.check(radioId);
+      }
+      FontScaleManager.applyFontScale(binding.getRoot(), scale);
+      applyPreviewScale(scale);
+    } finally {
+      isUpdatingUi = false;
+    }
   }
 
   /**
@@ -168,6 +307,25 @@ public class SettingsFragment extends Fragment {
     }
   }
 
+  /**
+   * Maps a numeric font scale factor to its RadioButton resource ID.
+   *
+   * @param scale Font scale factor.
+   * @return RadioButton ID in `fragment_settings.xml`.
+   */
+  public static int resolveRadioIdForScale(float scale) {
+    FontScaleOption option = FontScaleOption.fromScale(scale);
+    if (option == FontScaleOption.SMALL) {
+      return R.id.rb_font_small;
+    } else if (option == FontScaleOption.LARGE) {
+      return R.id.rb_font_large;
+    } else if (option == FontScaleOption.EXTRA_LARGE) {
+      return R.id.rb_font_extra_large;
+    } else {
+      return R.id.rb_font_medium;
+    }
+  }
+
   private void applyPreviewScale(float scale) {
     this.currentPreviewScale = scale;
     if (binding == null) {
@@ -181,30 +339,10 @@ public class SettingsFragment extends Fragment {
         TypedValue.COMPLEX_UNIT_SP, BASE_PREVIEW_META_SP * scale);
   }
 
-  private void restoreUiState(@NonNull Bundle savedInstanceState) {
-    binding.cbSourceBbc.setChecked(savedInstanceState.getBoolean(STATE_CB_BBC, true));
-    binding.cbSourceCnn.setChecked(savedInstanceState.getBoolean(STATE_CB_CNN, true));
-    binding.cbSourceAljazeera.setChecked(savedInstanceState.getBoolean(STATE_CB_ALJAZEERA, true));
-    binding.cbSourceFox.setChecked(savedInstanceState.getBoolean(STATE_CB_FOX, true));
-
-    int fontCheckedId = savedInstanceState.getInt(STATE_FONT_CHECKED_ID, R.id.rb_font_medium);
-    binding.rgFontSize.check(fontCheckedId);
-    applyPreviewScale(resolveScaleForRadioId(fontCheckedId));
-
-    int providerCheckedId =
-        savedInstanceState.getInt(STATE_PROVIDER_CHECKED_ID, R.id.rb_provider_server_default);
-    binding.rgAiProvider.check(providerCheckedId);
-  }
-
   @Override
   public void onSaveInstanceState(@NonNull Bundle outState) {
     super.onSaveInstanceState(outState);
     if (binding != null) {
-      outState.putBoolean(STATE_CB_BBC, binding.cbSourceBbc.isChecked());
-      outState.putBoolean(STATE_CB_CNN, binding.cbSourceCnn.isChecked());
-      outState.putBoolean(STATE_CB_ALJAZEERA, binding.cbSourceAljazeera.isChecked());
-      outState.putBoolean(STATE_CB_FOX, binding.cbSourceFox.isChecked());
-      outState.putInt(STATE_FONT_CHECKED_ID, binding.rgFontSize.getCheckedRadioButtonId());
       outState.putInt(STATE_PROVIDER_CHECKED_ID, binding.rgAiProvider.getCheckedRadioButtonId());
     }
   }
@@ -219,6 +357,14 @@ public class SettingsFragment extends Fragment {
   }
 
   @Override
+  public void onHiddenChanged(boolean hidden) {
+    super.onHiddenChanged(hidden);
+    if (!hidden) {
+      syncUiFromPreferences();
+    }
+  }
+
+  @Override
   public void onStart() {
     super.onStart();
     Log.d(TAG, "onStart: SettingsFragment becoming visible");
@@ -228,6 +374,7 @@ public class SettingsFragment extends Fragment {
   public void onResume() {
     super.onResume();
     Log.d(TAG, "onResume: SettingsFragment active in foreground");
+    syncUiFromPreferences();
   }
 
   @Override
@@ -246,6 +393,7 @@ public class SettingsFragment extends Fragment {
   public void onDestroyView() {
     super.onDestroyView();
     Log.d(TAG, "onDestroyView: Clearing ViewBinding reference");
+    dynamicSourceCheckBoxes.clear();
     binding = null;
   }
 

@@ -34,6 +34,14 @@ public class SettingsFragmentTest {
   }
 
   @Test
+  public void resolveRadioIdForScale_mapsAllFourScalesToRadioButtons() {
+    assertEquals(R.id.rb_font_small, SettingsFragment.resolveRadioIdForScale(0.90f));
+    assertEquals(R.id.rb_font_medium, SettingsFragment.resolveRadioIdForScale(1.00f));
+    assertEquals(R.id.rb_font_large, SettingsFragment.resolveRadioIdForScale(1.15f));
+    assertEquals(R.id.rb_font_extra_large, SettingsFragment.resolveRadioIdForScale(1.30f));
+  }
+
+  @Test
   public void mainActivityTagConstants_remainStable() {
     assertEquals("tag_news", MainActivity.TAG_NEWS);
     assertEquals("tag_globe", MainActivity.TAG_GLOBE);

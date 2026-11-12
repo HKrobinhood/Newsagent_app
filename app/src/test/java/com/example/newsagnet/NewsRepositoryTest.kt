@@ -7,6 +7,7 @@ import com.example.newsagnet.network.dto.GeoGeometryDto
 import com.example.newsagnet.network.dto.GeoPropertiesDto
 import com.example.newsagnet.network.dto.NewsArticleDto
 import com.example.newsagnet.network.dto.NewsListDto
+import com.example.newsagnet.network.dto.NewsSourceDto
 import com.example.newsagnet.repository.NewsRepositoryImpl
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -70,6 +71,29 @@ class FakeNewsApiService : NewsApiService {
         category: String?,
         limit: Int
     ): retrofit2.Call<GeoFeatureCollectionDto> {
+        throw UnsupportedOperationException("Not implemented in fake")
+    }
+
+    override fun getNewsFilteredCall(
+        page: Int,
+        limit: Int,
+        category: String?,
+        source: String?,
+        sourceIds: String?,
+        keyword: String?
+    ): retrofit2.Call<NewsListDto> {
+        throw UnsupportedOperationException("Not implemented in fake")
+    }
+
+    override fun getGeoNewsFilteredCall(
+        category: String?,
+        sourceIds: String?,
+        limit: Int
+    ): retrofit2.Call<GeoFeatureCollectionDto> {
+        throw UnsupportedOperationException("Not implemented in fake")
+    }
+
+    override fun getNewsSourcesCall(): retrofit2.Call<List<NewsSourceDto>> {
         throw UnsupportedOperationException("Not implemented in fake")
     }
 

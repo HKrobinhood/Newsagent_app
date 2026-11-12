@@ -5,24 +5,37 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
+import com.example.newsagnet.model.NewsSourceItem;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Instrumentation tests verifying S0 Settings navigation from News, Globe, and AI Intel, back
- * navigation, screen rotation state survival, and coexistence with BottomNavigation and Reading
- * History.
+ * Instrumentation tests verifying S0 & S1 Settings navigation, News Sources persistence & Empty
+ * State filtering, and Global Font Scale persistence across configuration changes.
  */
 @RunWith(AndroidJUnit4.class)
 public class SettingsNavigationTest {
+
+  @Before
+  public void resetPreferencesBeforeTest() {
+    Context context = ApplicationProvider.getApplicationContext();
+    LocalPreferencesRepository repo = LocalPreferencesRepository.getInstance(context);
+    repo.resetSourcesToDefault(NewsSourceItem.getDefaultSourceIds());
+    repo.setFontScale(1.00f);
+  }
 
   @Test
   public void openSettingsFromNewsGlobeAndChat_andReturnToOriginTab() {
@@ -135,6 +148,73 @@ public class SettingsNavigationTest {
             activity.getSupportFragmentManager().executePendingTransactions();
             assertFalse(activity.isSettingsVisible());
             assertEquals(MainActivity.TAG_GLOBE, activity.getActiveFragmentTag());
+          });
+    }
+  }
+
+  @Test
+  public void disableAllSources_showsAllSourcesDisabledEmptyState_andSelectAllRestores() {
+    Context context = ApplicationProvider.getApplicationContext();
+    LocalPreferencesRepository repo = LocalPreferencesRepository.getInstance(context);
+
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            // Open Settings from News
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            // Uncheck all 4 default sources
+            ((CheckBox) activity.findViewById(R.id.cb_source_bbc)).setChecked(false);
+            ((CheckBox) activity.findViewById(R.id.cb_source_cnn)).setChecked(false);
+            ((CheckBox) activity.findViewById(R.id.cb_source_aljazeera)).setChecked(false);
+            ((CheckBox) activity.findViewById(R.id.cb_source_fox)).setChecked(false);
+
+            assertTrue(repo.getPreferences().areAllSourcesDisabled());
+
+            // Return to News and verify Empty State message for all sources disabled
+            activity.findViewById(R.id.btn_settings_back).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            TextView tvEmpty = activity.findViewById(R.id.tv_empty);
+            assertEquals(View.VISIBLE, tvEmpty.getVisibility());
+            assertEquals(
+                activity.getString(R.string.settings_empty_all_sources_disabled),
+                tvEmpty.getText().toString());
+
+            // Open Settings again and click Select All
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+            activity.findViewById(R.id.btn_sources_select_all).performClick();
+
+            assertFalse(repo.getPreferences().areAllSourcesDisabled());
+            assertEquals(4, repo.getEnabledSourceIds().size());
+          });
+    }
+  }
+
+  @Test
+  public void extraLargeFontScale_persistsAndScalesTextWithoutClipping() {
+    Context context = ApplicationProvider.getApplicationContext();
+    LocalPreferencesRepository repo = LocalPreferencesRepository.getInstance(context);
+
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            TextView previewTitle = activity.findViewById(R.id.tv_font_preview_headline);
+            float mediumPx = previewTitle.getTextSize();
+
+            RadioGroup fontGroup = activity.findViewById(R.id.rg_font_size);
+            fontGroup.check(R.id.rb_font_extra_large);
+
+            assertEquals(1.30f, repo.getFontScale(), 0.001f);
+            float extraLargePx = previewTitle.getTextSize();
+            assertTrue(
+                "Extra Large text size should be scaled up relative to Medium",
+                extraLargePx > mediumPx * 1.20f);
           });
     }
   }

@@ -8,7 +8,9 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.databinding.ItemReadingHistoryBinding;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -20,6 +22,14 @@ final class HistoryAdapter extends ListAdapter<HistoryEntry, HistoryAdapter.Hold
   }
 
   private final Actions actions;
+  private float fontScale = UserPreferences.DEFAULT_FONT_SCALE;
+
+  void setFontScale(float fontScale) {
+    if (Float.compare(this.fontScale, fontScale) != 0) {
+      this.fontScale = fontScale;
+      notifyDataSetChanged();
+    }
+  }
 
   HistoryAdapter(Actions actions) {
     super(new DiffUtil.ItemCallback<HistoryEntry>() {
@@ -58,6 +68,7 @@ final class HistoryAdapter extends ListAdapter<HistoryEntry, HistoryAdapter.Hold
     b.historyItemOpen.setOnClickListener(v -> actions.open(entry));
     b.historyItemEdit.setOnClickListener(v -> actions.edit(entry));
     b.historyItemDelete.setOnClickListener(v -> actions.delete(entry));
+    FontScaleManager.applyFontScale(holder.itemView, fontScale);
   }
 
   static final class Holder extends RecyclerView.ViewHolder {

@@ -13,9 +13,13 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
 import com.example.newsagnet.concurrency.AppExecutors;
+import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
 import com.example.newsagnet.data.prefs.NewsPreferences;
+import com.example.newsagnet.data.prefs.UserPreferences;
+import com.example.newsagnet.data.prefs.UserPreferencesRepository;
 import com.example.newsagnet.databinding.FragmentNewsBinding;
 import com.example.newsagnet.history.HistoryRepository;
 import com.example.newsagnet.history.ReadingHistoryActivity;
@@ -27,17 +31,21 @@ import com.example.newsagnet.repository.NewsCallback;
 import com.example.newsagnet.repository.NewsPageResult;
 import com.example.newsagnet.ui.adapter.NewsAdapter;
 import com.example.newsagnet.ui.adapter.NewsItemClickListener;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * NewsFragment hosts the global news feed, category filter chips, and pagination.
+ * NewsFragment hosts the global news feed, category filter chips, media source filtering, and
+ * pagination.
  *
  * <p>Conforms to COMP7506 Ch3 (Java OOP & Interfaces), Ch4 (Lifecycle), Ch5 (XML Layouts,
  * RecyclerView, Adapter, ViewHolder), Ch6 (Intent & SharedPreferences), and Ch7 (Thread,
  * Runnable, ExecutorService, Handler, UI Thread).
  */
-public class NewsFragment extends Fragment implements NewsItemClickListener {
+public class NewsFragment extends Fragment
+    implements NewsItemClickListener, UserPreferencesRepository.OnPreferencesChangedListener {
 
   private static final String TAG = "NewsFragment";
   private static final int PAGE_SIZE = 20;
@@ -46,11 +54,13 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
   private JavaNewsRepository newsRepository;
   private AppExecutors appExecutors;
   private NewsPreferences newsPreferences;
+  private UserPreferencesRepository preferencesRepository;
   private NewsAdapter newsAdapter;
   private LinearLayoutManager layoutManager;
 
   private final List<NewsArticle> articleDataset = new ArrayList<>();
   private NewsCategory currentCategory = NewsCategory.ALL;
+  private String lastLoadedSourceIdsParam = null;
   private int currentPage = 1;
   private boolean hasMore = false;
   private boolean isLoading = false;
@@ -92,12 +102,16 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
     Log.d(TAG, "onViewCreated: Setting up RecyclerView, Concurrency, and Preferences");
 
     newsPreferences = new NewsPreferences(requireContext());
+    preferencesRepository = LocalPreferencesRepository.getInstance(requireContext());
+    preferencesRepository.addOnPreferencesChangedListener(this);
 
     setupRecyclerView();
     setupCategoryChips();
     setupSwipeRefresh();
     setupHeaderActions();
     setupScrollPagination();
+
+    applyUserFontScale(preferencesRepository.getFontScale());
 
     // Restore persistent user category preference (COMP7506 Ch6 SharedPreferences)
     NewsCategory savedCategory = newsPreferences.getDefaultCategory();
@@ -109,6 +123,42 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
 
     // Trigger initial background load via ExecutorService (COMP7506 Ch7)
     loadNews(false);
+  }
+
+  private void applyUserFontScale(float fontScale) {
+    if (binding != null) {
+      FontScaleManager.applyFontScale(binding.getRoot(), fontScale);
+    }
+    if (newsAdapter != null) {
+      newsAdapter.setFontScale(fontScale);
+    }
+  }
+
+  @Override
+  public void onPreferencesChanged(@NonNull UserPreferences updatedPreferences) {
+    if (binding == null) {
+      return;
+    }
+    applyUserFontScale(updatedPreferences.getFontScale());
+
+    String nextSourceParam = updatedPreferences.toSourceIdsQueryParam();
+    if (!Objects.equals(lastLoadedSourceIdsParam, nextSourceParam)) {
+      Log.d(TAG, "onPreferencesChanged: enabled sources changed -> reloading news feed");
+      isLoading = false;
+      isRefreshing = false;
+      isLoadingMore = false;
+      articleDataset.clear();
+      newsAdapter.submitList(new ArrayList<>());
+      loadNews(false);
+    }
+  }
+
+  @Override
+  public void onHiddenChanged(boolean hidden) {
+    super.onHiddenChanged(hidden);
+    if (!hidden && preferencesRepository != null) {
+      onPreferencesChanged(preferencesRepository.getPreferences());
+    }
   }
 
   private void setupRecyclerView() {
@@ -178,32 +228,36 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
   private void setupSwipeRefresh() {
     binding.swipeRefresh.setColorSchemeResources(R.color.primary_blue, R.color.primary_cyan);
     binding.swipeRefresh.setProgressBackgroundColorSchemeResource(R.color.surface_dark);
-    binding.swipeRefresh.setOnRefreshListener(() -> {
-      Log.d(TAG, "SwipeRefresh triggered: reloading news via background executor");
-      loadNews(true);
-    });
+    binding.swipeRefresh.setOnRefreshListener(
+        () -> {
+          Log.d(TAG, "SwipeRefresh triggered: reloading news via background executor");
+          loadNews(true);
+        });
   }
 
   private void setupHeaderActions() {
     binding.btnHistory.setOnClickListener(
         v -> startActivity(new Intent(requireContext(), ReadingHistoryActivity.class)));
 
-    binding.btnRefresh.setOnClickListener(v -> {
-      Log.d(TAG, "Header refresh clicked");
-      loadNews(true);
-    });
+    binding.btnRefresh.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Header refresh clicked");
+          loadNews(true);
+        });
 
-    binding.btnSettings.setOnClickListener(v -> {
-      Log.d(TAG, "Header settings clicked");
-      if (getActivity() instanceof com.example.newsagnet.MainActivity) {
-        ((com.example.newsagnet.MainActivity) getActivity()).openSettings();
-      }
-    });
+    binding.btnSettings.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Header settings clicked");
+          if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).openSettings();
+          }
+        });
 
-    binding.layoutStateViews.btnRetry.setOnClickListener(v -> {
-      Log.d(TAG, "Retry button clicked");
-      loadNews(false);
-    });
+    binding.layoutStateViews.btnRetry.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Retry button clicked");
+          loadNews(false);
+        });
   }
 
   private void setupScrollPagination() {
@@ -230,8 +284,8 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
   }
 
   /**
-   * Loads initial or refreshed news dataset using {@link JavaNewsRepository} and
-   * {@link AppExecutors}.
+   * Loads initial or refreshed news dataset using {@link JavaNewsRepository} and {@link
+   * AppExecutors}.
    *
    * <p>COMP7506 Ch7: Network call executes on {@code ExecutorService} background thread; result
    * delivers to UI thread via {@code Handler}.
@@ -240,6 +294,25 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
    */
   public void loadNews(boolean isRefresh) {
     if (isLoading || isRefreshing) {
+      return;
+    }
+
+    UserPreferences prefs =
+        preferencesRepository != null
+            ? preferencesRepository.getPreferences()
+            : newsPreferences.getUserPreferences();
+    String sourceIdsParam = prefs.toSourceIdsQueryParam();
+    lastLoadedSourceIdsParam = sourceIdsParam;
+
+    if (prefs.areAllSourcesDisabled()) {
+      isLoading = false;
+      isRefreshing = false;
+      hasMore = false;
+      articleDataset.clear();
+      if (binding != null) {
+        binding.swipeRefresh.setRefreshing(false);
+        renderData(0, true);
+      }
       return;
     }
 
@@ -258,6 +331,7 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
         PAGE_SIZE,
         categoryParam,
         null,
+        sourceIdsParam,
         null,
         new NewsCallback<NewsPageResult>() {
           @Override
@@ -274,12 +348,13 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
             currentPage = 1;
             hasMore = result.isHasMore();
 
+            List<NewsArticle> filtered = prefs.filterArticles(result.getArticles());
             articleDataset.clear();
-            articleDataset.addAll(result.getArticles());
+            articleDataset.addAll(filtered);
 
             if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
-              renderData(result.getTotal());
+              renderData(result.getTotal(), false);
             }
           }
 
@@ -300,11 +375,18 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
         });
   }
 
-  /**
-   * Fetches subsequent page of news articles via background thread pool.
-   */
+  /** Fetches subsequent page of news articles via background thread pool. */
   private void loadNextPage() {
     if (isLoadingMore || !hasMore || isLoading || isRefreshing) {
+      return;
+    }
+
+    UserPreferences prefs =
+        preferencesRepository != null
+            ? preferencesRepository.getPreferences()
+            : newsPreferences.getUserPreferences();
+    if (prefs.areAllSourcesDisabled()) {
+      hasMore = false;
       return;
     }
 
@@ -313,12 +395,14 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
 
     int nextPage = currentPage + 1;
     String categoryParam = currentCategory == NewsCategory.ALL ? null : currentCategory.getKey();
+    String sourceIdsParam = prefs.toSourceIdsQueryParam();
 
     newsRepository.getNews(
         nextPage,
         PAGE_SIZE,
         categoryParam,
         null,
+        sourceIdsParam,
         null,
         new NewsCallback<NewsPageResult>() {
           @Override
@@ -334,7 +418,7 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
             currentPage = nextPage;
             hasMore = result.isHasMore();
 
-            articleDataset.addAll(result.getArticles());
+            articleDataset.addAll(prefs.filterArticles(result.getArticles()));
 
             if (binding != null) {
               binding.progressLoadingMore.setVisibility(View.GONE);
@@ -371,13 +455,16 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
     binding.recyclerNews.setVisibility(View.GONE);
   }
 
-  private void renderData(int totalCount) {
+  private void renderData(int totalCount, boolean allSourcesDisabled) {
     binding.layoutStateViews.layoutLoading.setVisibility(View.GONE);
     binding.layoutStateViews.layoutError.setVisibility(View.GONE);
 
     if (articleDataset.isEmpty()) {
+      binding.layoutStateViews.tvEmpty.setText(
+          allSourcesDisabled ? R.string.settings_empty_all_sources_disabled : R.string.news_empty);
       binding.layoutStateViews.tvEmpty.setVisibility(View.VISIBLE);
       binding.recyclerNews.setVisibility(View.GONE);
+      newsAdapter.submitList(new ArrayList<>());
     } else {
       binding.layoutStateViews.tvEmpty.setVisibility(View.GONE);
       binding.recyclerNews.setVisibility(View.VISIBLE);
@@ -390,8 +477,7 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
 
   private void updateHeaderSubtitle(int totalCount) {
     if (totalCount > 0) {
-      binding.tvHeaderSubtitle.setText(
-          getString(R.string.news_subtitle_format, totalCount));
+      binding.tvHeaderSubtitle.setText(getString(R.string.news_subtitle_format, totalCount));
       binding.tvHeaderSubtitle.setVisibility(View.VISIBLE);
     } else {
       binding.tvHeaderSubtitle.setVisibility(View.GONE);
@@ -423,6 +509,9 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
   public void onResume() {
     super.onResume();
     Log.d(TAG, "onResume: NewsFragment active and interactive");
+    if (preferencesRepository != null) {
+      onPreferencesChanged(preferencesRepository.getPreferences());
+    }
   }
 
   @Override
@@ -441,6 +530,9 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
   public void onDestroyView() {
     super.onDestroyView();
     Log.d(TAG, "onDestroyView: Clearing ViewBinding reference to prevent memory leaks");
+    if (preferencesRepository != null) {
+      preferencesRepository.removeOnPreferencesChangedListener(this);
+    }
     binding = null;
   }
 

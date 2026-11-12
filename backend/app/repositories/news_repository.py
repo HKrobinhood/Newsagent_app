@@ -87,11 +87,21 @@ class NewsRepository:
         limit: int = 20,
         category: str | None = None,
         source: str | None = None,
+        source_ids: list[str] | None = None,
         keyword: str | None = None,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
     ) -> tuple[list[NewsArticle], int]:
         """List articles with pagination, filtering and sorting by published_at DESC."""
+        if source_ids is not None:
+            normalized_sources = [
+                s.strip().lower() for s in source_ids if s and s.strip()
+            ]
+            if not normalized_sources:
+                return [], 0
+        else:
+            normalized_sources = None
+
         stmt = select(NewsArticle)
         count_stmt = select(func.count(NewsArticle.id))
 
@@ -105,6 +115,14 @@ class NewsRepository:
             stmt = stmt.where(func.lower(NewsArticle.source_id) == source.lower())
             count_stmt = count_stmt.where(
                 func.lower(NewsArticle.source_id) == source.lower()
+            )
+
+        if normalized_sources is not None:
+            stmt = stmt.where(
+                func.lower(NewsArticle.source_id).in_(normalized_sources)
+            )
+            count_stmt = count_stmt.where(
+                func.lower(NewsArticle.source_id).in_(normalized_sources)
             )
 
         if keyword:
@@ -138,9 +156,19 @@ class NewsRepository:
     async def list_geolocated_articles(
         self,
         category: str | None = None,
+        source_ids: list[str] | None = None,
         limit: int = 100,
     ) -> list[NewsArticle]:
         """List articles that have valid non-null latitude and longitude."""
+        if source_ids is not None:
+            normalized_sources = [
+                s.strip().lower() for s in source_ids if s and s.strip()
+            ]
+            if not normalized_sources:
+                return []
+        else:
+            normalized_sources = None
+
         stmt = (
             select(NewsArticle)
             .where(NewsArticle.latitude.is_not(None))
@@ -148,6 +176,11 @@ class NewsRepository:
         )
         if category and category.lower() != "all":
             stmt = stmt.where(func.lower(NewsArticle.category) == category.lower())
+
+        if normalized_sources is not None:
+            stmt = stmt.where(
+                func.lower(NewsArticle.source_id).in_(normalized_sources)
+            )
 
         stmt = stmt.order_by(desc(NewsArticle.published_at)).limit(limit)
         result = await self.session.execute(stmt)

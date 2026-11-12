@@ -23,6 +23,27 @@ class SearchResult:
     source_name: str
     published_at: str
     location_name: str | None = None
+    source_id: str | None = None
+
+
+def infer_source_id(source_name: str, url: str = "") -> str:
+    """Normalize a source name or URL to a canonical source_id."""
+    combined = f"{source_name} {url}".lower()
+    if "bbc" in combined:
+        return "bbc"
+    if "cnn" in combined:
+        return "cnn"
+    if "aljazeera" in combined or "al jazeera" in combined:
+        return "aljazeera"
+    if "fox" in combined:
+        return "fox"
+    if "reuters" in combined:
+        return "reuters"
+    if "apnews" in combined or "ap news" in combined:
+        return "ap"
+    if "bloomberg" in combined:
+        return "bloomberg"
+    return source_name.strip().lower().replace(" ", "_")
 
 
 class BaseWebSearchClient(ABC):

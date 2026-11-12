@@ -25,6 +25,7 @@
     <string name="settings_source_cnn">CNN</string>
     <string name="settings_source_aljazeera">Al Jazeera</string>
     <string name="settings_source_fox">Fox News</string>
+    <string name="settings_empty_all_sources_disabled">No news sources selected. Enable at least one media source in Settings.</string>
 
     <!-- Appearance Section -->
     <string name="settings_section_appearance">Appearance</string>

@@ -23,8 +23,10 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
 import com.example.newsagnet.databinding.ActivityReadingHistoryBinding;
 import com.example.newsagnet.databinding.DialogHistoryNoteBinding;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -121,7 +123,17 @@ public class ReadingHistoryActivity extends AppCompatActivity implements History
     }
   }
 
-  @Override protected void onResume() { super.onResume(); load(); }
+  @Override protected void onResume() {
+    super.onResume();
+    float fontScale = LocalPreferencesRepository.getInstance(this).getFontScale();
+    if (binding != null) {
+      FontScaleManager.applyFontScale(binding.getRoot(), fontScale);
+    }
+    if (adapter != null) {
+      adapter.setFontScale(fontScale);
+    }
+    load();
+  }
 
   private boolean active() { return binding != null && !isFinishing() && !isDestroyed(); }
 

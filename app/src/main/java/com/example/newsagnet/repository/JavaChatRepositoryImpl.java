@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.example.newsagnet.concurrency.AppExecutors;
 import com.example.newsagnet.concurrency.ResultCallback;
+import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.model.ChatMessage;
 import com.example.newsagnet.model.MessageRole;
 import com.example.newsagnet.model.NewsArticle;
@@ -15,7 +16,9 @@ import com.example.newsagnet.network.dto.NewsSourceRefDto;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import retrofit2.Call;
@@ -50,13 +53,27 @@ public class JavaChatRepositoryImpl implements JavaChatRepository {
       @Nullable String sessionId,
       @NonNull String mode,
       @NonNull ResultCallback<AgentChatResult> callback) {
+    sendMessage(message, sessionId, mode, null, callback);
+  }
+
+  @Override
+  public void sendMessage(
+      @NonNull String message,
+      @Nullable String sessionId,
+      @NonNull String mode,
+      @Nullable Collection<String> allowedSourceIds,
+      @NonNull ResultCallback<AgentChatResult> callback) {
+
+    List<String> sourceIdList =
+        allowedSourceIds == null ? null : new ArrayList<>(allowedSourceIds);
 
     appExecutors
         .networkIO()
         .execute(
             () -> {
               try {
-                ChatRequestDto requestDto = new ChatRequestDto(message, sessionId, mode);
+                ChatRequestDto requestDto =
+                    new ChatRequestDto(message, sessionId, mode, sourceIdList);
                 Call<ChatResponseDto> call = apiService.sendMessageCall(requestDto);
                 Response<ChatResponseDto> response = call.execute();
 
@@ -68,6 +85,16 @@ public class JavaChatRepositoryImpl implements JavaChatRepository {
                     for (NewsSourceRefDto ref : dto.getSources()) {
                       sources.add(ref.toDomain());
                     }
+                  }
+
+                  if (sourceIdList != null) {
+                    UserPreferences filterPrefs =
+                        new UserPreferences(
+                            new LinkedHashSet<>(sourceIdList),
+                            UserPreferences.DEFAULT_FONT_SCALE,
+                            UserPreferences.DEFAULT_SETTINGS_VERSION,
+                            0L);
+                    sources = filterPrefs.filterArticles(sources);
                   }
 
                   ChatMessage chatMessage =
@@ -84,8 +111,7 @@ public class JavaChatRepositoryImpl implements JavaChatRepository {
 
                   appExecutors.mainThread().execute(() -> callback.onSuccess(result));
                 } else {
-                  String errorMsg =
-                      "HTTP " + response.code() + ": " + response.message();
+                  String errorMsg = "HTTP " + response.code() + ": " + response.message();
                   appExecutors
                       .mainThread()
                       .execute(() -> callback.onError(new IOException(errorMsg)));
