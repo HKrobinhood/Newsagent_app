@@ -15,6 +15,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.newsagnet.R;
 import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.ui.adapter.NewsItemClickListener;
+import com.example.newsagnet.ui.theme.FontScaleManager;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,32 +27,44 @@ public class RecommendedContainerViewHolder extends RecyclerView.ViewHolder {
   private final RecyclerView rvRecommended;
   private final RecommendedAdapter innerAdapter;
 
-  public RecommendedContainerViewHolder(@NonNull View itemView) {
+  public RecommendedContainerViewHolder(
+      @NonNull View itemView, @Nullable RecyclerView.RecycledViewPool sharedPool) {
     super(itemView);
     rvRecommended = itemView.findViewById(R.id.rv_recommended);
     rvRecommended.setLayoutManager(
         new LinearLayoutManager(itemView.getContext(), LinearLayoutManager.HORIZONTAL, false));
+    if (sharedPool != null) {
+      rvRecommended.setRecycledViewPool(sharedPool);
+    }
     innerAdapter = new RecommendedAdapter();
     rvRecommended.setAdapter(innerAdapter);
   }
 
+  public RecommendedContainerViewHolder(@NonNull View itemView) {
+    this(itemView, null);
+  }
+
   public void bind(
       @NonNull List<NewsArticle> recommendedArticles,
+      float fontScale,
       @Nullable NewsItemClickListener listener) {
-    innerAdapter.setArticles(recommendedArticles, listener);
+    innerAdapter.setArticles(recommendedArticles, fontScale, listener);
   }
 
   private static class RecommendedAdapter
       extends RecyclerView.Adapter<RecommendedCardViewHolder> {
 
     private final List<NewsArticle> items = new ArrayList<>();
+    private float fontScale = 1.0f;
     private NewsItemClickListener clickListener;
 
     public void setArticles(
         @NonNull List<NewsArticle> articles,
+        float fontScale,
         @Nullable NewsItemClickListener listener) {
       this.items.clear();
       this.items.addAll(articles);
+      this.fontScale = fontScale;
       this.clickListener = listener;
       notifyDataSetChanged();
     }
@@ -71,6 +84,7 @@ public class RecommendedContainerViewHolder extends RecyclerView.ViewHolder {
         @NonNull RecommendedCardViewHolder holder, int position) {
       NewsArticle article = items.get(position);
       holder.bind(article, clickListener);
+      FontScaleManager.applyFontScale(holder.itemView, fontScale);
     }
 
     @Override

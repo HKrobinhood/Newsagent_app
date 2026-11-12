@@ -181,6 +181,7 @@ public class NewsFragment extends Fragment
     binding.recyclerNews.setLayoutManager(layoutManager);
     binding.recyclerNews.setAdapter(newsAdapter);
     binding.recyclerNews.setHasFixedSize(true);
+    binding.recyclerNews.setItemViewCacheSize(20);
   }
 
   private void setupCategoryChips() {

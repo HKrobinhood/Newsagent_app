@@ -46,6 +46,8 @@ public class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
   private float fontScale = UserPreferences.DEFAULT_FONT_SCALE;
   private boolean isEditorialLayout = true;
   private boolean hasRecommendedSection = false;
+  private final RecyclerView.RecycledViewPool recommendedRecycledPool =
+      new RecyclerView.RecycledViewPool();
 
   public NewsAdapter() {}
 
@@ -217,7 +219,7 @@ public class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
       return new FeaturedNewsViewHolder(view);
     } else if (viewType == VIEW_TYPE_RECOMMENDED) {
       View view = inflater.inflate(R.layout.item_news_recommended_container, parent, false);
-      return new RecommendedContainerViewHolder(view);
+      return new RecommendedContainerViewHolder(view, recommendedRecycledPool);
     } else if (viewType == VIEW_TYPE_LARGE) {
       View view = inflater.inflate(R.layout.item_news_large, parent, false);
       return new LargeNewsViewHolder(view);
@@ -244,7 +246,8 @@ public class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         ((FeaturedNewsViewHolder) holder).bind(article, clickListener);
       }
     } else if (holder instanceof RecommendedContainerViewHolder) {
-      ((RecommendedContainerViewHolder) holder).bind(recommendedArticles, clickListener);
+      ((RecommendedContainerViewHolder) holder)
+          .bind(recommendedArticles, fontScale, clickListener);
     } else if (holder instanceof LargeNewsViewHolder) {
       NewsArticle article = getItem(position);
       if (article != null) {
