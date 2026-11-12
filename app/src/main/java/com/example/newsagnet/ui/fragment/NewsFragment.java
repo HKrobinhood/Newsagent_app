@@ -193,6 +193,13 @@ public class NewsFragment extends Fragment implements NewsItemClickListener {
       loadNews(true);
     });
 
+    binding.btnSettings.setOnClickListener(v -> {
+      Log.d(TAG, "Header settings clicked");
+      if (getActivity() instanceof com.example.newsagnet.MainActivity) {
+        ((com.example.newsagnet.MainActivity) getActivity()).openSettings();
+      }
+    });
+
     binding.layoutStateViews.btnRetry.setOnClickListener(v -> {
       Log.d(TAG, "Retry button clicked");
       loadNews(false);

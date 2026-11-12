@@ -123,6 +123,14 @@ public class ChatFragment extends Fragment implements NewsItemClickListener {
           messageList.clear();
           initWelcomeMessage();
         });
+
+    binding.btnChatSettings.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Chat header settings clicked");
+          if (getActivity() instanceof com.example.newsagnet.MainActivity) {
+            ((com.example.newsagnet.MainActivity) getActivity()).openSettings();
+          }
+        });
   }
 
   private void initWelcomeMessage() {

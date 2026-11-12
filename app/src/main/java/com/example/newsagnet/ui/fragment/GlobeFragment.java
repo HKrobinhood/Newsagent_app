@@ -177,6 +177,14 @@ public class GlobeFragment extends Fragment
   private void setupActions() {
     binding.btnGlobeRefresh.setOnClickListener(v -> loadGeolocatedNews());
 
+    binding.btnGlobeSettings.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Globe header settings clicked");
+          if (getActivity() instanceof com.example.newsagnet.MainActivity) {
+            ((com.example.newsagnet.MainActivity) getActivity()).openSettings();
+          }
+        });
+
     binding.layoutGlobeStateViews.btnRetry.setOnClickListener(v -> loadGeolocatedNews());
 
     binding.btnCardClose.setOnClickListener(
