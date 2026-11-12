@@ -480,4 +480,77 @@ public class SettingsNavigationTest {
     }
     assertTrue("Reading History and notes must remain intact after sign out", foundAfterLogout);
   }
+
+  @Test
+  public void cloudPreferenceSync_whenSignedIn_reconcilesAndReflectsInUiAndPersistsAcrossRecreation() {
+    Context context = ApplicationProvider.getApplicationContext();
+    AuthPreferences authPrefs = AuthPreferences.getInstance(context);
+    LocalPreferencesRepository localRepo = LocalPreferencesRepository.getInstance(context);
+
+    // Simulate active session
+    UserProfile testUser =
+        new UserProfile(
+            "sync-usr-456",
+            "crossdevice@globalnews.ai",
+            "Alex Smith",
+            "google");
+    AuthSession session =
+        new AuthSession(
+            "cloud-sync-token-456",
+            "Bearer",
+            "2026-12-31T23:59:59Z",
+            testUser);
+    authPrefs.saveSession(session);
+
+    // Seed cloud preferences into local repository via applyRemotePreferences (as if fetched from GET /me/preferences)
+    localRepo.applyRemotePreferences(
+        java.util.Arrays.asList("aljazeera", "fox"),
+        1.15f,
+        1,
+        System.currentTimeMillis());
+
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            // 1. Account section shows signed-in state
+            TextView tvName = activity.findViewById(R.id.tv_account_name);
+            assertEquals("Alex Smith", tvName.getText().toString());
+
+            // 2. News Sources checkboxes reflect cloud preferences
+            CheckBox cbBbc = activity.findViewById(R.id.cb_source_bbc);
+            CheckBox cbCnn = activity.findViewById(R.id.cb_source_cnn);
+            CheckBox cbAljazeera = activity.findViewById(R.id.cb_source_aljazeera);
+            CheckBox cbFox = activity.findViewById(R.id.cb_source_fox);
+
+            assertFalse(cbBbc.isChecked());
+            assertFalse(cbCnn.isChecked());
+            assertTrue(cbAljazeera.isChecked());
+            assertTrue(cbFox.isChecked());
+
+            // 3. Font Scale radio button reflects cloud preference (Large 1.15x)
+            RadioGroup fontGroup = activity.findViewById(R.id.rg_font_size);
+            assertEquals(R.id.rb_font_large, fontGroup.getCheckedRadioButtonId());
+            assertEquals(1.15f, localRepo.getFontScale(), 0.001f);
+
+            // 4. Modify setting locally on device: select BBC
+            cbBbc.setChecked(true);
+            assertTrue(localRepo.getEnabledSourceIds().contains("bbc"));
+          });
+
+      // Verify persistent across activity recreation / screen rotation
+      scenario.recreate();
+
+      scenario.onActivity(
+          activity -> {
+            activity.getSupportFragmentManager().executePendingTransactions();
+            CheckBox cbBbc = activity.findViewById(R.id.cb_source_bbc);
+            assertTrue(cbBbc.isChecked());
+            RadioGroup fontGroup = activity.findViewById(R.id.rg_font_size);
+            assertEquals(R.id.rb_font_large, fontGroup.getCheckedRadioButtonId());
+          });
+    }
+  }
 }

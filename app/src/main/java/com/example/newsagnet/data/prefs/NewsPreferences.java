@@ -291,6 +291,29 @@ public class NewsPreferences {
   }
 
   /**
+   * Applies cloud-synchronized preferences to local storage.
+   *
+   * @param sourceIds Enabled source IDs from cloud.
+   * @param fontScale Font scale ratio from cloud.
+   * @param schemaVersion Settings schema version.
+   * @param lastUpdated Timestamp of last update.
+   */
+  public void applyRemotePreferences(
+      @NonNull Collection<String> sourceIds,
+      float fontScale,
+      int schemaVersion,
+      long lastUpdated) {
+    Set<String> normalized = normalizeIds(sourceIds);
+    sharedPreferences
+        .edit()
+        .putString(KEY_ENABLED_SOURCE_IDS, serializeIds(normalized))
+        .putFloat(KEY_FONT_SCALE, FontScaleOption.fromScale(fontScale).getScale())
+        .putInt(KEY_SETTINGS_VERSION, Math.max(1, schemaVersion))
+        .putLong(KEY_LAST_UPDATED, lastUpdated > 0 ? lastUpdated : System.currentTimeMillis())
+        .apply();
+  }
+
+  /**
    * Constructs an immutable {@link UserPreferences} snapshot of the current settings.
    *
    * @return Current {@link UserPreferences} snapshot.

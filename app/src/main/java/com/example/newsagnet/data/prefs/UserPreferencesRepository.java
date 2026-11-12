@@ -98,6 +98,20 @@ public interface UserPreferencesRepository {
   long getLastUpdated();
 
   /**
+   * Applies cloud-synchronized preferences to local storage and notifies registered listeners.
+   *
+   * @param sourceIds Enabled source IDs from cloud.
+   * @param fontScale Font scale ratio from cloud.
+   * @param schemaVersion Settings schema version.
+   * @param lastUpdated Timestamp of last update.
+   */
+  void applyRemotePreferences(
+      @NonNull Collection<String> sourceIds,
+      float fontScale,
+      int schemaVersion,
+      long lastUpdated);
+
+  /**
    * Registers a listener for preference changes.
    *
    * @param listener Listener to register.

@@ -34,6 +34,8 @@ import com.example.newsagnet.repository.JavaChatRepositoryImpl;
 import com.example.newsagnet.repository.JavaNewsRepository;
 import com.example.newsagnet.repository.JavaNewsRepositoryImpl;
 import com.example.newsagnet.repository.NewsCallback;
+import com.example.newsagnet.repository.RemotePreferencesRepository;
+import com.example.newsagnet.repository.RemotePreferencesRepositoryImpl;
 import com.example.newsagnet.ui.theme.FontScaleManager;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -74,6 +76,7 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
   private JavaChatRepository chatRepository;
   private AuthRepository authRepository;
   private GoogleAuthManager googleAuthManager;
+  private RemotePreferencesRepository remotePreferencesRepository;
   private final Map<String, MaterialCheckBox> dynamicSourceCheckBoxes = new LinkedHashMap<>();
   private final Set<String> availableSourceIds =
       new LinkedHashSet<>(NewsSourceItem.getDefaultSourceIds());
@@ -106,6 +109,7 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
     chatRepository = new JavaChatRepositoryImpl(requireContext());
     authRepository = AuthRepositoryImpl.getInstance(requireContext());
     googleAuthManager = GoogleAuthManager.getInstance();
+    remotePreferencesRepository = RemotePreferencesRepositoryImpl.getInstance(requireContext());
   }
 
   @Nullable
@@ -133,6 +137,23 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
     setupAiAgentSection();
 
     syncUiFromPreferences();
+
+    if (authRepository.isLoggedIn()) {
+      remotePreferencesRepository.syncFromRemote(
+          new ResultCallback<UserPreferences>() {
+            @Override
+            public void onSuccess(@NonNull UserPreferences preferences) {
+              if (binding != null) {
+                syncUiFromPreferences();
+              }
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+              Log.d(TAG, "syncFromRemote fallback to local: " + exception.getMessage());
+            }
+          });
+    }
 
     if (savedInstanceState != null) {
       int providerCheckedId =
@@ -180,7 +201,23 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
                       new ResultCallback<UserProfile>() {
                         @Override
                         public void onSuccess(@NonNull UserProfile user) {
-                          syncAccountUi();
+                          remotePreferencesRepository.reconcileOnLogin(
+                              new ResultCallback<UserPreferences>() {
+                                @Override
+                                public void onSuccess(@NonNull UserPreferences preferences) {
+                                  if (binding != null) {
+                                    syncAccountUi();
+                                    syncUiFromPreferences();
+                                  }
+                                }
+
+                                @Override
+                                public void onError(@NonNull Exception exception) {
+                                  if (binding != null) {
+                                    syncAccountUi();
+                                  }
+                                }
+                              });
                         }
 
                         @Override

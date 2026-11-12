@@ -15,7 +15,8 @@
     <string name="settings_btn_google_sign_in">Sign in with Google</string>
     <string name="settings_btn_sign_out">Sign out</string>
     <string name="settings_account_hint">You can customize local settings without signing in. Sign in to sync media and font preferences across devices.</string>
-    <string name="settings_account_signed_in_hint">Signed in with Google. Preferences are linked to your account.</string>
+    <string name="settings_account_signed_in_hint">Signed in with Google. Cross-device preference synchronization active.</string>
+    <string name="settings_account_sync_success">Settings successfully synchronized with your account.</string>
     <string name="settings_google_auth_not_configured_guide">Google Sign-In requires a Google Cloud OAuth 2.0 Web Client ID. Please configure \'google_server_client_id\' in strings.xml to enable Google Sign-In. Retaining Guest Mode.</string>
     <string name="google_server_client_id"></string>
 

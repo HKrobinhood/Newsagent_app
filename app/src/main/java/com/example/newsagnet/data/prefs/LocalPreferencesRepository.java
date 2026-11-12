@@ -145,6 +145,16 @@ public class LocalPreferencesRepository implements UserPreferencesRepository {
   }
 
   @Override
+  public void applyRemotePreferences(
+      @NonNull Collection<String> sourceIds,
+      float fontScale,
+      int schemaVersion,
+      long lastUpdated) {
+    newsPreferences.applyRemotePreferences(sourceIds, fontScale, schemaVersion, lastUpdated);
+    notifyListeners();
+  }
+
+  @Override
   public void addOnPreferencesChangedListener(@NonNull OnPreferencesChangedListener listener) {
     listeners.add(listener);
   }
