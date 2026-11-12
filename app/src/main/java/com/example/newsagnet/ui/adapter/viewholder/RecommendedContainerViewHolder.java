@@ -121,21 +121,26 @@ public class RecommendedContainerViewHolder extends RecyclerView.ViewHolder {
       tvSource.setText(meta);
 
       Object imageModel =
+          article.getImageUrl() != null && !article.getImageUrl().trim().isEmpty()
+              ? article.getImageUrl()
+              : article.getMockDrawableRes();
+
+      int fallback =
           article.getMockDrawableRes() != null
               ? article.getMockDrawableRes()
-              : article.getImageUrl();
+              : R.drawable.mock_img_coastal_architecture;
 
       if (imageModel != null) {
         Glide.with(itemView.getContext())
             .load(imageModel)
-            .placeholder(R.drawable.mock_img_placeholder)
-            .error(R.drawable.mock_img_placeholder)
+            .placeholder(fallback)
+            .error(fallback)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
             .transition(DrawableTransitionOptions.withCrossFade())
             .centerCrop()
             .into(ivImage);
       } else {
-        ivImage.setImageResource(R.drawable.mock_img_placeholder);
+        ivImage.setImageResource(fallback);
       }
 
       itemView.setOnClickListener(

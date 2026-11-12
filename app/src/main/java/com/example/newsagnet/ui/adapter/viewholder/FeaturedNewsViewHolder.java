@@ -63,21 +63,26 @@ public class FeaturedNewsViewHolder extends RecyclerView.ViewHolder {
     }
 
     Object imageModel =
+        article.getImageUrl() != null && !article.getImageUrl().trim().isEmpty()
+            ? article.getImageUrl()
+            : article.getMockDrawableRes();
+
+    int fallback =
         article.getMockDrawableRes() != null
             ? article.getMockDrawableRes()
-            : article.getImageUrl();
+            : R.drawable.mock_img_cover_summit;
 
     if (imageModel != null) {
       Glide.with(itemView.getContext())
           .load(imageModel)
-          .placeholder(R.drawable.mock_img_placeholder)
-          .error(R.drawable.mock_img_placeholder)
+          .placeholder(fallback)
+          .error(fallback)
           .diskCacheStrategy(DiskCacheStrategy.ALL)
           .transition(DrawableTransitionOptions.withCrossFade())
           .centerCrop()
           .into(ivCover);
     } else {
-      ivCover.setImageResource(R.drawable.mock_img_placeholder);
+      ivCover.setImageResource(fallback);
     }
 
     itemView.setOnClickListener(

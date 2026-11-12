@@ -131,16 +131,38 @@ public class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
       }
     }
     featuredArticle = rawArticles.get(featuredIndex);
+    if (!featuredArticle.hasImage()) {
+      featuredArticle.setMockDrawableRes(resolveCoverDrawable(featuredArticle));
+      if (featuredArticle.getImageCredit() == null
+          || featuredArticle.getImageCredit().trim().isEmpty()) {
+        featuredArticle.setImageCredit("Photo: Global News Editorial Feature");
+      }
+    }
 
     // Remaining items pool without the featured article (ensuring no duplicates across sections)
     List<NewsArticle> pool = new ArrayList<>(rawArticles);
     pool.remove(featuredIndex);
 
-    // Recommended carousel: take up to 4 articles
+    // Recommended carousel: take up to 4 articles and ensure each has a curated editorial visual
     int recCount = Math.min(4, Math.max(0, pool.size() - 2));
     if (recCount > 0) {
+      int[] fallbackRecommendedDrawables =
+          new int[] {
+            R.drawable.mock_img_coastal_architecture,
+            R.drawable.mock_img_tech_quantum,
+            R.drawable.mock_img_renewable_energy,
+            R.drawable.mock_img_space_economy
+          };
       for (int i = 0; i < recCount; i++) {
-        recommendedArticles.add(pool.get(i));
+        NewsArticle recArticle = pool.get(i);
+        if (!recArticle.hasImage()) {
+          int fallbackRes =
+              resolveFallbackDrawable(
+                  recArticle,
+                  fallbackRecommendedDrawables[i % fallbackRecommendedDrawables.length]);
+          recArticle.setMockDrawableRes(fallbackRes);
+        }
+        recommendedArticles.add(recArticle);
       }
       hasRecommendedSection = true;
     }
@@ -148,6 +170,46 @@ public class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     // Latest News asymmetric grid: all remaining articles
     for (int i = recCount; i < pool.size(); i++) {
       latestArticles.add(pool.get(i));
+    }
+  }
+
+  private static int resolveCoverDrawable(@NonNull NewsArticle article) {
+    String category = article.getCategory();
+    if (category == null) {
+      return R.drawable.mock_img_cover_summit;
+    }
+    String normalized = category.trim().toLowerCase();
+    switch (normalized) {
+      case "technology":
+      case "tech":
+        return R.drawable.mock_img_tech_quantum;
+      case "business":
+        return R.drawable.mock_img_renewable_energy;
+      case "science":
+        return R.drawable.mock_img_space_economy;
+      default:
+        return R.drawable.mock_img_cover_summit;
+    }
+  }
+
+  private static int resolveFallbackDrawable(@NonNull NewsArticle article, int defaultRes) {
+    String category = article.getCategory();
+    if (category == null) {
+      return defaultRes;
+    }
+    String normalized = category.trim().toLowerCase();
+    switch (normalized) {
+      case "technology":
+      case "tech":
+        return R.drawable.mock_img_tech_quantum;
+      case "business":
+        return R.drawable.mock_img_renewable_energy;
+      case "science":
+        return R.drawable.mock_img_space_economy;
+      case "world":
+        return R.drawable.mock_img_coastal_architecture;
+      default:
+        return defaultRes;
     }
   }
 
