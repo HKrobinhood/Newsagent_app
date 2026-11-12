@@ -131,7 +131,6 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
     authRepository.addAuthListener(this);
 
     setupHeaderNavigation();
-    setupAccountSection();
     setupNewsSourcesSection();
     setupAppearanceSection();
     setupAiAgentSection();
@@ -176,109 +175,24 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
         });
   }
 
-  private void setupAccountSection() {
-    binding.btnGoogleSignIn.setOnClickListener(
-        v -> {
-          Log.d(TAG, "Sign in with Google clicked");
-          if (!googleAuthManager.isGoogleOAuthConfigured(requireContext())) {
-            String guide = googleAuthManager.getConfigurationGuideMessage(requireContext());
-            new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Google Sign-In")
-                .setMessage(guide)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-            binding.tvAccountHint.setText(guide);
-            return;
-          }
-
-          googleAuthManager.startGoogleSignIn(
-              requireActivity(),
-              new ResultCallback<String>() {
-                @Override
-                public void onSuccess(@NonNull String idToken) {
-                  authRepository.loginWithGoogle(
-                      idToken,
-                      new ResultCallback<UserProfile>() {
-                        @Override
-                        public void onSuccess(@NonNull UserProfile user) {
-                          remotePreferencesRepository.reconcileOnLogin(
-                              new ResultCallback<UserPreferences>() {
-                                @Override
-                                public void onSuccess(@NonNull UserPreferences preferences) {
-                                  if (binding != null) {
-                                    syncAccountUi();
-                                    syncUiFromPreferences();
-                                  }
-                                }
-
-                                @Override
-                                public void onError(@NonNull Exception exception) {
-                                  if (binding != null) {
-                                    syncAccountUi();
-                                  }
-                                }
-                              });
-                        }
-
-                        @Override
-                        public void onError(@NonNull Exception exception) {
-                          if (binding != null) {
-                            binding.tvAccountHint.setText(exception.getMessage());
-                          }
-                        }
-                      });
-                }
-
-                @Override
-                public void onError(@NonNull Exception exception) {
-                  if (binding != null) {
-                    binding.tvAccountHint.setText(exception.getMessage());
-                  }
-                }
-              });
-        });
-
-    binding.btnSignOut.setOnClickListener(
-        v -> {
-          Log.d(TAG, "Sign out clicked");
-          authRepository.logout(
-              new ResultCallback<Void>() {
-                @Override
-                public void onSuccess(Void data) {
-                  syncAccountUi();
-                }
-
-                @Override
-                public void onError(@NonNull Exception exception) {
-                  syncAccountUi();
-                }
-              });
-        });
-  }
-
-  public void syncAccountUi() {
-    if (binding == null || authRepository == null) {
-      return;
-    }
-    if (authRepository.isLoggedIn()) {
-      UserProfile profile = authRepository.getCurrentUser();
-      binding.tvAccountName.setText(profile.getFormattedDisplayName());
-      binding.tvAccountEmail.setText(profile.getEmail());
-      binding.tvAccountHint.setText(R.string.settings_account_signed_in_hint);
-      binding.btnGoogleSignIn.setVisibility(View.GONE);
-      binding.btnSignOut.setVisibility(View.VISIBLE);
-    } else {
-      binding.tvAccountName.setText(R.string.settings_account_guest_name);
-      binding.tvAccountEmail.setText(R.string.settings_account_guest_email);
-      binding.tvAccountHint.setText(R.string.settings_account_hint);
-      binding.btnGoogleSignIn.setVisibility(View.VISIBLE);
-      binding.btnSignOut.setVisibility(View.GONE);
-    }
-  }
-
   @Override
   public void onAuthChanged(@NonNull UserProfile userProfile) {
-    syncAccountUi();
+    if (!userProfile.isGuest() && remotePreferencesRepository != null) {
+      remotePreferencesRepository.syncFromRemote(
+          new ResultCallback<UserPreferences>() {
+            @Override
+            public void onSuccess(@NonNull UserPreferences preferences) {
+              if (binding != null) {
+                syncUiFromPreferences();
+              }
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+              Log.d(TAG, "onAuthChanged sync error: " + exception.getMessage());
+            }
+          });
+    }
   }
 
   private void setupNewsSourcesSection() {
@@ -614,7 +528,6 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
       FontScaleManager.applyFontScale(binding.getRoot(), scale);
       applyPreviewScale(scale);
       syncAiAgentUi();
-      syncAccountUi();
     } finally {
       isUpdatingUi = false;
     }

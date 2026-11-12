@@ -1,5 +1,6 @@
 package com.example.newsagnet;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -11,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import com.example.newsagnet.history.ReadingHistoryActivity;
+import com.example.newsagnet.ui.fragment.AccountBottomSheetDialogFragment;
 import com.example.newsagnet.ui.fragment.ChatFragment;
 import com.example.newsagnet.ui.fragment.GlobeFragment;
 import com.example.newsagnet.ui.fragment.NewsFragment;
@@ -219,6 +222,21 @@ public class MainActivity extends AppCompatActivity
   }
 
   /**
+   * Opens the BBC-style {@link AccountBottomSheetDialogFragment}.
+   */
+  public void openAccountBottomSheet() {
+    AccountBottomSheetDialogFragment sheet = AccountBottomSheetDialogFragment.newInstance();
+    sheet.show(getSupportFragmentManager(), AccountBottomSheetDialogFragment.TAG);
+  }
+
+  /**
+   * Opens the {@link ReadingHistoryActivity} screen.
+   */
+  public void openReadingHistory() {
+    startActivity(new Intent(this, ReadingHistoryActivity.class));
+  }
+
+  /**
    * Checks whether the Settings screen is currently displayed.
    *
    * @return True if {@link SettingsFragment} is the active fragment.
@@ -281,8 +299,8 @@ public class MainActivity extends AppCompatActivity
 
   @Override
   public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-    if (item.getItemId() == R.id.action_settings) {
-      openSettings();
+    if (item.getItemId() == R.id.action_account) {
+      openAccountBottomSheet();
       return true;
     }
     return super.onOptionsItemSelected(item);

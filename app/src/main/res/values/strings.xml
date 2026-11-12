@@ -25,4 +25,17 @@
     <string name="retry">Retry</string>
     <string name="dialog_cancel">Close</string>
     <string name="error_network_general">Network error occurred while fetching news.</string>
+
+    <!-- Account Bottom Sheet Strings -->
+    <string name="account_title">Account</string>
+    <string name="account_bottom_sheet_title">Account &amp; Settings</string>
+    <string name="account_guest_title">Guest Account</string>
+    <string name="account_guest_subtitle">Sign in to sync your preferences</string>
+    <string name="account_menu_settings">Settings</string>
+    <string name="account_menu_history">Reading History</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_sign_out_confirm_title">Sign out</string>
+    <string name="account_sign_out_confirm_message">Are you sure you want to sign out? Your local preferences and reading history will remain intact on this device.</string>
+    <string name="account_sign_out_confirm_positive">Sign out</string>
+    <string name="account_sign_out_confirm_negative">Cancel</string>
 </resources>

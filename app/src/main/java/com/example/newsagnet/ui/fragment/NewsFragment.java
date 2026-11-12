@@ -236,20 +236,17 @@ public class NewsFragment extends Fragment
   }
 
   private void setupHeaderActions() {
-    binding.btnHistory.setOnClickListener(
-        v -> startActivity(new Intent(requireContext(), ReadingHistoryActivity.class)));
-
     binding.btnRefresh.setOnClickListener(
         v -> {
           Log.d(TAG, "Header refresh clicked");
           loadNews(true);
         });
 
-    binding.btnSettings.setOnClickListener(
+    binding.btnAccount.setOnClickListener(
         v -> {
-          Log.d(TAG, "Header settings clicked");
+          Log.d(TAG, "Header account avatar clicked: opening Account Bottom Sheet");
           if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).openSettings();
+            ((MainActivity) getActivity()).openAccountBottomSheet();
           }
         });
 

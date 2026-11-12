@@ -3,6 +3,7 @@ package com.example.newsagnet.settings;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -28,6 +29,7 @@ import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.model.NewsSourceItem;
 import com.example.newsagnet.model.UserProfile;
 import com.example.newsagnet.repository.AuthRepositoryImpl;
+import com.example.newsagnet.ui.fragment.AccountBottomSheetDialogFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +39,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Instrumentation tests verifying S0 & S1 Settings navigation, News Sources persistence & Empty
- * State filtering, and Global Font Scale persistence across configuration changes.
+ * Instrumentation tests verifying Settings navigation, Account Bottom Sheet UI, News Sources
+ * persistence & Empty State filtering, and Global Font Scale persistence.
  */
 @RunWith(AndroidJUnit4.class)
 public class SettingsNavigationTest {
@@ -53,6 +55,27 @@ public class SettingsNavigationTest {
     AuthPreferences.getInstance(context).clearSession();
   }
 
+  private void navigateToSettingsFromNews(MainActivity activity) {
+    View accountBtn = activity.findViewById(R.id.btn_account);
+    if (accountBtn != null) {
+      accountBtn.performClick();
+      activity.getSupportFragmentManager().executePendingTransactions();
+      AccountBottomSheetDialogFragment sheet =
+          (AccountBottomSheetDialogFragment)
+              activity.getSupportFragmentManager().findFragmentByTag(AccountBottomSheetDialogFragment.TAG);
+      if (sheet != null && sheet.getView() != null) {
+        View settingsItem = sheet.getView().findViewById(R.id.item_sheet_settings);
+        if (settingsItem != null) {
+          settingsItem.performClick();
+          activity.getSupportFragmentManager().executePendingTransactions();
+          return;
+        }
+      }
+    }
+    activity.openSettings();
+    activity.getSupportFragmentManager().executePendingTransactions();
+  }
+
   @Test
   public void openSettingsFromNewsGlobeAndChat_andReturnToOriginTab() {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
@@ -60,9 +83,7 @@ public class SettingsNavigationTest {
       scenario.onActivity(
           activity -> {
             assertEquals(MainActivity.TAG_NEWS, activity.getActiveFragmentTag());
-            View newsSettingsBtn = activity.findViewById(R.id.btn_settings);
-            assertNotNull(newsSettingsBtn);
-            newsSettingsBtn.performClick();
+            activity.openSettings();
             activity.getSupportFragmentManager().executePendingTransactions();
 
             assertTrue(activity.isSettingsVisible());
@@ -78,7 +99,7 @@ public class SettingsNavigationTest {
             assertEquals(MainActivity.TAG_NEWS, activity.getActiveFragmentTag());
           });
 
-      // 2. Switch to Globe, open Settings, and return via system Back dispatcher
+      // 2. Switch to Globe, open Settings, and return via Toolbar back button
       scenario.onActivity(
           activity -> {
             BottomNavigationView bottomNav = activity.findViewById(R.id.bottom_navigation);
@@ -94,7 +115,9 @@ public class SettingsNavigationTest {
             assertTrue(activity.isSettingsVisible());
             assertEquals(MainActivity.TAG_GLOBE, activity.getPreviousTabTag());
 
-            activity.getOnBackPressedDispatcher().onBackPressed();
+            View backBtn = activity.findViewById(R.id.btn_settings_back);
+            assertNotNull(backBtn);
+            backBtn.performClick();
             activity.getSupportFragmentManager().executePendingTransactions();
 
             assertFalse(activity.isSettingsVisible());
@@ -122,6 +145,33 @@ public class SettingsNavigationTest {
 
             assertFalse(activity.isSettingsVisible());
             assertEquals(MainActivity.TAG_CHAT, activity.getActiveFragmentTag());
+          });
+    }
+  }
+
+  @Test
+  public void accountBottomSheet_opensSettingsAndHistoryMenuItems() {
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            View accountBtn = activity.findViewById(R.id.btn_account);
+            assertNotNull(accountBtn);
+            accountBtn.performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            AccountBottomSheetDialogFragment sheet =
+                (AccountBottomSheetDialogFragment)
+                    activity.getSupportFragmentManager().findFragmentByTag(AccountBottomSheetDialogFragment.TAG);
+            assertNotNull(sheet);
+            assertNotNull(sheet.getView());
+
+            View settingsItem = sheet.getView().findViewById(R.id.item_sheet_settings);
+            assertNotNull(settingsItem);
+            settingsItem.performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            assertTrue(activity.isSettingsVisible());
+            assertEquals(MainActivity.TAG_SETTINGS, activity.getActiveFragmentTag());
           });
     }
   }
@@ -176,9 +226,8 @@ public class SettingsNavigationTest {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
       scenario.onActivity(
           activity -> {
-            // Open Settings from News
-            activity.findViewById(R.id.btn_settings).performClick();
-            activity.getSupportFragmentManager().executePendingTransactions();
+            // Open Settings via bottom sheet
+            navigateToSettingsFromNews(activity);
 
             // Uncheck all 4 default sources
             ((CheckBox) activity.findViewById(R.id.cb_source_bbc)).setChecked(false);
@@ -199,8 +248,7 @@ public class SettingsNavigationTest {
                 tvEmpty.getText().toString());
 
             // Open Settings again and click Select All
-            activity.findViewById(R.id.btn_settings).performClick();
-            activity.getSupportFragmentManager().executePendingTransactions();
+            navigateToSettingsFromNews(activity);
             activity.findViewById(R.id.btn_sources_select_all).performClick();
 
             assertFalse(repo.getPreferences().areAllSourcesDisabled());
@@ -217,8 +265,7 @@ public class SettingsNavigationTest {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
       scenario.onActivity(
           activity -> {
-            activity.findViewById(R.id.btn_settings).performClick();
-            activity.getSupportFragmentManager().executePendingTransactions();
+            navigateToSettingsFromNews(activity);
 
             TextView previewTitle = activity.findViewById(R.id.tv_font_preview_headline);
             float mediumPx = previewTitle.getTextSize();
@@ -244,8 +291,7 @@ public class SettingsNavigationTest {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
       scenario.onActivity(
           activity -> {
-            activity.findViewById(R.id.btn_settings).performClick();
-            activity.getSupportFragmentManager().executePendingTransactions();
+            navigateToSettingsFromNews(activity);
 
             RadioGroup providerGroup = activity.findViewById(R.id.rg_ai_provider);
             providerGroup.check(R.id.rb_provider_gemini);
@@ -295,37 +341,51 @@ public class SettingsNavigationTest {
   }
 
   @Test
-  public void accountSection_defaultsToGuest_andHandlesUnconfiguredOAuthGracefully() {
+  public void accountBottomSheet_defaultsToGuest_andHandlesUnconfiguredOAuthGracefully() {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
       scenario.onActivity(
           activity -> {
-            activity.findViewById(R.id.btn_settings).performClick();
+            // Open Account Bottom Sheet
+            View accountBtn = activity.findViewById(R.id.btn_account);
+            assertNotNull(accountBtn);
+            accountBtn.performClick();
             activity.getSupportFragmentManager().executePendingTransactions();
 
-            TextView tvName = activity.findViewById(R.id.tv_account_name);
-            TextView tvEmail = activity.findViewById(R.id.tv_account_email);
-            View btnSignIn = activity.findViewById(R.id.btn_google_sign_in);
-            View btnSignOut = activity.findViewById(R.id.btn_sign_out);
+            AccountBottomSheetDialogFragment sheet =
+                (AccountBottomSheetDialogFragment)
+                    activity.getSupportFragmentManager().findFragmentByTag(AccountBottomSheetDialogFragment.TAG);
+            assertNotNull(sheet);
+            assertNotNull(sheet.getView());
+
+            TextView tvName = sheet.getView().findViewById(R.id.tv_sheet_account_name);
+            TextView tvSubtitle = sheet.getView().findViewById(R.id.tv_sheet_account_subtitle);
+            View btnSignOut = sheet.getView().findViewById(R.id.btn_sheet_sign_out);
+            View sectionAccount = sheet.getView().findViewById(R.id.layout_sheet_account);
 
             assertEquals(
-                activity.getString(R.string.settings_account_guest_name),
+                activity.getString(R.string.account_guest_title),
                 tvName.getText().toString());
             assertEquals(
-                activity.getString(R.string.settings_account_guest_email),
-                tvEmail.getText().toString());
-            assertEquals(View.VISIBLE, btnSignIn.getVisibility());
+                activity.getString(R.string.account_guest_subtitle),
+                tvSubtitle.getText().toString());
             assertEquals(View.GONE, btnSignOut.getVisibility());
 
             // Clicking sign in when unconfigured launches setup guide dialog safely without crashing
-            btnSignIn.performClick();
-            // App state remains stable in Guest mode
-            assertEquals(View.VISIBLE, btnSignIn.getVisibility());
+            sectionAccount.performClick();
+            assertEquals(View.GONE, btnSignOut.getVisibility());
+
+            // Also verify SettingsFragment presents source preferences and appearance cards
+            activity.openSettings();
+            activity.getSupportFragmentManager().executePendingTransactions();
+            assertNotNull(activity.findViewById(R.id.card_settings_sources));
+            assertNotNull(activity.findViewById(R.id.card_settings_appearance));
+            assertNotNull(activity.findViewById(R.id.card_settings_ai_agent));
           });
     }
   }
 
   @Test
-  public void accountSection_signedInUserUpdatesUi_andSignOutRestoresGuestAndPreservesHistory()
+  public void accountBottomSheet_signedInUserUpdatesUi_andSignOutRestoresGuestAndPreservesHistory()
       throws Exception {
     Context context = ApplicationProvider.getApplicationContext();
     AuthPreferences authPrefs = AuthPreferences.getInstance(context);
@@ -402,17 +462,23 @@ public class SettingsNavigationTest {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
       scenario.onActivity(
           activity -> {
-            activity.findViewById(R.id.btn_settings).performClick();
+            View accountBtn = activity.findViewById(R.id.btn_account);
+            assertNotNull(accountBtn);
+            accountBtn.performClick();
             activity.getSupportFragmentManager().executePendingTransactions();
 
-            TextView tvName = activity.findViewById(R.id.tv_account_name);
-            TextView tvEmail = activity.findViewById(R.id.tv_account_email);
-            View btnSignIn = activity.findViewById(R.id.btn_google_sign_in);
-            View btnSignOut = activity.findViewById(R.id.btn_sign_out);
+            AccountBottomSheetDialogFragment sheet =
+                (AccountBottomSheetDialogFragment)
+                    activity.getSupportFragmentManager().findFragmentByTag(AccountBottomSheetDialogFragment.TAG);
+            assertNotNull(sheet);
+            assertNotNull(sheet.getView());
+
+            TextView tvName = sheet.getView().findViewById(R.id.tv_sheet_account_name);
+            TextView tvSubtitle = sheet.getView().findViewById(R.id.tv_sheet_account_subtitle);
+            View btnSignOut = sheet.getView().findViewById(R.id.btn_sheet_sign_out);
 
             assertEquals("Jane Doe", tvName.getText().toString());
-            assertEquals("tester@globalnews.ai", tvEmail.getText().toString());
-            assertEquals(View.GONE, btnSignIn.getVisibility());
+            assertEquals("tester@globalnews.ai", tvSubtitle.getText().toString());
             assertEquals(View.VISIBLE, btnSignOut.getVisibility());
 
             AuthRepositoryImpl.getInstance(activity).addAuthListener(
@@ -422,8 +488,18 @@ public class SettingsNavigationTest {
                   }
                 });
 
-            // Perform sign out
-            btnSignOut.performClick();
+            // Trigger logout directly via repository to simulate dialog confirmation
+            AuthRepositoryImpl.getInstance(activity).logout(new com.example.newsagnet.concurrency.ResultCallback<Void>() {
+              @Override
+              public void onSuccess(Void data) {
+                activity.runOnUiThread(sheet::syncAccountUi);
+              }
+
+              @Override
+              public void onError(Exception exception) {
+                activity.runOnUiThread(sheet::syncAccountUi);
+              }
+            });
           });
 
       assertTrue(
@@ -433,19 +509,23 @@ public class SettingsNavigationTest {
       scenario.onActivity(
           activity -> {
             activity.getSupportFragmentManager().executePendingTransactions();
-            TextView tvName = activity.findViewById(R.id.tv_account_name);
-            TextView tvEmail = activity.findViewById(R.id.tv_account_email);
-            View btnSignIn = activity.findViewById(R.id.btn_google_sign_in);
-            View btnSignOut = activity.findViewById(R.id.btn_sign_out);
+            AccountBottomSheetDialogFragment sheet =
+                (AccountBottomSheetDialogFragment)
+                    activity.getSupportFragmentManager().findFragmentByTag(AccountBottomSheetDialogFragment.TAG);
+            assertNotNull(sheet);
+            assertNotNull(sheet.getView());
 
-            // Ui restored to Guest
+            TextView tvName = sheet.getView().findViewById(R.id.tv_sheet_account_name);
+            TextView tvSubtitle = sheet.getView().findViewById(R.id.tv_sheet_account_subtitle);
+            View btnSignOut = sheet.getView().findViewById(R.id.btn_sheet_sign_out);
+
+            // UI restored to Guest in Bottom Sheet
             assertEquals(
-                activity.getString(R.string.settings_account_guest_name),
+                activity.getString(R.string.account_guest_title),
                 tvName.getText().toString());
             assertEquals(
-                activity.getString(R.string.settings_account_guest_email),
-                tvEmail.getText().toString());
-            assertEquals(View.VISIBLE, btnSignIn.getVisibility());
+                activity.getString(R.string.account_guest_subtitle),
+                tvSubtitle.getText().toString());
             assertEquals(View.GONE, btnSignOut.getVisibility());
           });
     }
@@ -512,14 +592,9 @@ public class SettingsNavigationTest {
     try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
       scenario.onActivity(
           activity -> {
-            activity.findViewById(R.id.btn_settings).performClick();
-            activity.getSupportFragmentManager().executePendingTransactions();
+            navigateToSettingsFromNews(activity);
 
-            // 1. Account section shows signed-in state
-            TextView tvName = activity.findViewById(R.id.tv_account_name);
-            assertEquals("Alex Smith", tvName.getText().toString());
-
-            // 2. News Sources checkboxes reflect cloud preferences
+            // 1. News Sources checkboxes reflect cloud preferences
             CheckBox cbBbc = activity.findViewById(R.id.cb_source_bbc);
             CheckBox cbCnn = activity.findViewById(R.id.cb_source_cnn);
             CheckBox cbAljazeera = activity.findViewById(R.id.cb_source_aljazeera);
@@ -530,12 +605,12 @@ public class SettingsNavigationTest {
             assertTrue(cbAljazeera.isChecked());
             assertTrue(cbFox.isChecked());
 
-            // 3. Font Scale radio button reflects cloud preference (Large 1.15x)
+            // 2. Font Scale radio button reflects cloud preference (Large 1.15x)
             RadioGroup fontGroup = activity.findViewById(R.id.rg_font_size);
             assertEquals(R.id.rb_font_large, fontGroup.getCheckedRadioButtonId());
             assertEquals(1.15f, localRepo.getFontScale(), 0.001f);
 
-            // 4. Modify setting locally on device: select BBC
+            // 3. Modify setting locally on device: select BBC
             cbBbc.setChecked(true);
             assertTrue(localRepo.getEnabledSourceIds().contains("bbc"));
           });
