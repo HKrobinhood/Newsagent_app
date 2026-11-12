@@ -70,6 +70,21 @@ public interface UserPreferencesRepository {
   void reconcileAvailableSources(@NonNull Collection<String> availableSourceIds);
 
   /**
+   * Returns the user's active theme mode preference (Light, Dark, or System).
+   *
+   * @return Active {@link ThemeMode}.
+   */
+  @NonNull
+  ThemeMode getThemeMode();
+
+  /**
+   * Updates the user's active theme mode preference.
+   *
+   * @param themeMode Selected {@link ThemeMode}.
+   */
+  void setThemeMode(@NonNull ThemeMode themeMode);
+
+  /**
    * Returns the active global font scale factor (`0.90f`, `1.00f`, `1.15f`, `1.30f`).
    *
    * @return Font scale factor.

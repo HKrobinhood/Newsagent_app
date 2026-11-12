@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:text="@string/news_title"
-            android:textColor="@color/white"
+            android:textColor="@color/text_primary"
             android:textSize="24sp"
             android:textStyle="bold"
             android:maxLines="1"
@@ -70,6 +70,7 @@
             android:contentDescription="@string/news_retry"
             android:padding="12dp"
             android:src="@drawable/ic_refresh"
+            app:tint="@color/text_primary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btn_account"
             app:layout_constraintTop_toTopOf="parent" />

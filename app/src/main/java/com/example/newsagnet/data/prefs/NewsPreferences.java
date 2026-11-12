@@ -21,7 +21,12 @@ public class NewsPreferences {
   public static final String KEY_DEFAULT_CATEGORY = "pref_key_default_category";
   public static final String KEY_LAST_REFRESH_TIME = "pref_key_last_refresh_time";
   public static final String KEY_DARK_MODE_ENABLED = "pref_key_dark_mode_enabled";
+  public static final String KEY_THEME_MODE = "pref_key_theme_mode";
   public static final String KEY_PAGE_SIZE = "pref_key_page_size";
+
+  public static final String THEME_MODE_LIGHT = "light";
+  public static final String THEME_MODE_DARK = "dark";
+  public static final String THEME_MODE_SYSTEM = "system";
 
   public static final String KEY_ENABLED_SOURCE_IDS = "pref_key_enabled_source_ids";
   public static final String KEY_KNOWN_SOURCE_IDS = "pref_key_known_source_ids";
@@ -98,6 +103,34 @@ public class NewsPreferences {
    */
   public boolean isDarkModeEnabled() {
     return sharedPreferences.getBoolean(KEY_DARK_MODE_ENABLED, true);
+  }
+
+  /**
+   * Saves the user's preferred visual theme mode (Light, Dark, or Follow System).
+   *
+   * @param mode Selected {@link ThemeMode}.
+   */
+  public void setThemeMode(@NonNull ThemeMode mode) {
+    sharedPreferences.edit().putString(KEY_THEME_MODE, mode.getKey()).apply();
+    setDarkModeEnabled(mode != ThemeMode.LIGHT);
+  }
+
+  /**
+   * Retrieves the preferred visual theme mode.
+   *
+   * @return Saved {@link ThemeMode}, defaulting to {@link ThemeMode#SYSTEM}.
+   */
+  @NonNull
+  public ThemeMode getThemeMode() {
+    String key = sharedPreferences.getString(KEY_THEME_MODE, null);
+    if (key != null) {
+      return ThemeMode.fromKey(key);
+    }
+    if (sharedPreferences.contains(KEY_DARK_MODE_ENABLED)) {
+      boolean isDark = sharedPreferences.getBoolean(KEY_DARK_MODE_ENABLED, true);
+      return isDark ? ThemeMode.DARK : ThemeMode.LIGHT;
+    }
+    return ThemeMode.SYSTEM;
   }
 
   /**

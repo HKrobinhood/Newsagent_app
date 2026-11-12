@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.example.newsagnet.MainActivity;
@@ -19,6 +20,7 @@ import com.example.newsagnet.auth.GoogleAuthManager;
 import com.example.newsagnet.concurrency.ResultCallback;
 import com.example.newsagnet.data.prefs.FontScaleOption;
 import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
+import com.example.newsagnet.data.prefs.ThemeMode;
 import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.data.prefs.UserPreferencesRepository;
 import com.example.newsagnet.data.security.AiProviderOption;
@@ -293,6 +295,24 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
   }
 
   private void setupAppearanceSection() {
+    binding.rgThemeMode.setOnCheckedChangeListener(
+        (group, checkedId) -> {
+          if (isUpdatingUi) {
+            return;
+          }
+          ThemeMode selectedMode;
+          if (checkedId == R.id.rb_theme_light) {
+            selectedMode = ThemeMode.LIGHT;
+          } else if (checkedId == R.id.rb_theme_dark) {
+            selectedMode = ThemeMode.DARK;
+          } else {
+            selectedMode = ThemeMode.SYSTEM;
+          }
+          Log.d(TAG, "Theme mode preference changed: " + selectedMode.getKey());
+          preferencesRepository.setThemeMode(selectedMode);
+          AppCompatDelegate.setDefaultNightMode(selectedMode.getNightMode());
+        });
+
     binding.rgFontSize.setOnCheckedChangeListener(
         (group, checkedId) -> {
           float scale = resolveScaleForRadioId(checkedId);
@@ -518,6 +538,19 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
 
       for (Map.Entry<String, MaterialCheckBox> entry : dynamicSourceCheckBoxes.entrySet()) {
         entry.getValue().setChecked(prefs.isSourceEnabled(entry.getKey()));
+      }
+
+      ThemeMode themeMode = preferencesRepository.getThemeMode();
+      int themeRadioId;
+      if (themeMode == ThemeMode.LIGHT) {
+        themeRadioId = R.id.rb_theme_light;
+      } else if (themeMode == ThemeMode.DARK) {
+        themeRadioId = R.id.rb_theme_dark;
+      } else {
+        themeRadioId = R.id.rb_theme_system;
+      }
+      if (binding.rgThemeMode.getCheckedRadioButtonId() != themeRadioId) {
+        binding.rgThemeMode.check(themeRadioId);
       }
 
       float scale = prefs.getFontScale();

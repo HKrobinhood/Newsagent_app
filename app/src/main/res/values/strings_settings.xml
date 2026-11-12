@@ -32,8 +32,13 @@
     <string name="settings_empty_all_sources_disabled">No news sources selected. Enable at least one media source in Settings.</string>
 
     <!-- Appearance Section -->
-    <string name="settings_section_appearance">Appearance</string>
-    <string name="settings_appearance_subtitle">Adjust global text size across headlines, globe cards, AI chat, and history</string>
+    <string name="settings_section_appearance">Appearance &amp; Theme</string>
+    <string name="settings_appearance_subtitle">Customize visual theme mode and typography scaling</string>
+    <string name="settings_theme_title">Theme Mode</string>
+    <string name="settings_theme_light">Light (白天模式)</string>
+    <string name="settings_theme_dark">Dark (黑夜模式)</string>
+    <string name="settings_theme_system">Follow System (跟随手机)</string>
+    <string name="settings_font_scaling_title">Font Scaling</string>
     <string name="settings_font_small">Small (0.90x)</string>
     <string name="settings_font_medium">Medium (1.00x · Default)</string>
     <string name="settings_font_large">Large (1.15x)</string>

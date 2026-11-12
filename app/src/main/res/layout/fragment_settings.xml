@@ -231,11 +231,76 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
+                    <!-- Theme Mode Sub-section -->
+                    <TextView
+                        android:id="@+id/tv_theme_mode_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/settings_theme_title"
+                        android:textColor="@color/primary_cyan"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_theme_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_light"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_theme_light"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            app:buttonTint="@color/primary_cyan" />
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_dark"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_theme_dark"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            app:buttonTint="@color/primary_cyan" />
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_system"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="@string/settings_theme_system"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            app:buttonTint="@color/primary_cyan" />
+
+                    </RadioGroup>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@color/card_stroke" />
+
+                    <!-- Font Scaling Sub-section -->
+                    <TextView
+                        android:id="@+id/tv_font_size_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_font_scaling_title"
+                        android:textColor="@color/primary_cyan"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
                     <RadioGroup
                         android:id="@+id/rg_font_size"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
                         android:orientation="vertical">
 
                         <com.google.android.material.radiobutton.MaterialRadioButton

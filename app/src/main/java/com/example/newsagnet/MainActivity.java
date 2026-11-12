@@ -59,6 +59,11 @@ public class MainActivity extends AppCompatActivity
 
   @Override
   protected void onCreate(@Nullable Bundle savedInstanceState) {
+    com.example.newsagnet.data.prefs.NewsPreferences prefs =
+        new com.example.newsagnet.data.prefs.NewsPreferences(this);
+    androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+        prefs.getThemeMode().getNightMode());
+
     super.onCreate(savedInstanceState);
     Log.d(TAG, "onCreate: Initializing MainActivity with XML layout");
 
