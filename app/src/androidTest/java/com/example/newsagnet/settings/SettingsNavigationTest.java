@@ -16,11 +16,22 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
+import com.example.newsagnet.data.prefs.AuthPreferences;
 import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
 import com.example.newsagnet.data.security.AiProviderOption;
 import com.example.newsagnet.data.security.SecureApiKeyStore;
+import com.example.newsagnet.history.HistoryEntry;
+import com.example.newsagnet.history.HistoryFilter;
+import com.example.newsagnet.history.HistoryRepository;
+import com.example.newsagnet.model.AuthSession;
+import com.example.newsagnet.model.NewsArticle;
 import com.example.newsagnet.model.NewsSourceItem;
+import com.example.newsagnet.model.UserProfile;
+import com.example.newsagnet.repository.AuthRepositoryImpl;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +50,7 @@ public class SettingsNavigationTest {
     repo.resetSourcesToDefault(NewsSourceItem.getDefaultSourceIds());
     repo.setFontScale(1.00f);
     SecureApiKeyStore.getInstance(context).removeApiKey();
+    AuthPreferences.getInstance(context).clearSession();
   }
 
   @Test
@@ -280,5 +292,192 @@ public class SettingsNavigationTest {
                 tvStatus.getText().toString());
           });
     }
+  }
+
+  @Test
+  public void accountSection_defaultsToGuest_andHandlesUnconfiguredOAuthGracefully() {
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            TextView tvName = activity.findViewById(R.id.tv_account_name);
+            TextView tvEmail = activity.findViewById(R.id.tv_account_email);
+            View btnSignIn = activity.findViewById(R.id.btn_google_sign_in);
+            View btnSignOut = activity.findViewById(R.id.btn_sign_out);
+
+            assertEquals(
+                activity.getString(R.string.settings_account_guest_name),
+                tvName.getText().toString());
+            assertEquals(
+                activity.getString(R.string.settings_account_guest_email),
+                tvEmail.getText().toString());
+            assertEquals(View.VISIBLE, btnSignIn.getVisibility());
+            assertEquals(View.GONE, btnSignOut.getVisibility());
+
+            // Clicking sign in when unconfigured launches setup guide dialog safely without crashing
+            btnSignIn.performClick();
+            // App state remains stable in Guest mode
+            assertEquals(View.VISIBLE, btnSignIn.getVisibility());
+          });
+    }
+  }
+
+  @Test
+  public void accountSection_signedInUserUpdatesUi_andSignOutRestoresGuestAndPreservesHistory()
+      throws Exception {
+    Context context = ApplicationProvider.getApplicationContext();
+    AuthPreferences authPrefs = AuthPreferences.getInstance(context);
+
+    // Seed Reading History via public HistoryRepository API
+    HistoryRepository historyRepo = HistoryRepository.getInstance(context);
+    NewsArticle testArticle =
+        new NewsArticle(
+            "s3-test-id",
+            "S3 Integration News",
+            "bbc",
+            "BBC News",
+            "2026-11-12T00:00:00Z",
+            "https://example.org/s3-test",
+            "world");
+    HistoryRepository.recordOpened(context, testArticle);
+
+    // Give background disk executor time to write and save a note
+    Thread.sleep(200);
+    CountDownLatch noteLatch = new CountDownLatch(1);
+    historyRepo.saveNote(
+        "https://example.org/s3-test",
+        "Important note to preserve",
+        new HistoryRepository.Callback<Boolean>() {
+          @Override
+          public void onSuccess(Boolean value) {
+            noteLatch.countDown();
+          }
+
+          @Override
+          public void onError() {
+            noteLatch.countDown();
+          }
+        });
+    assertTrue(noteLatch.await(5, TimeUnit.SECONDS));
+
+    // Verify seeded state
+    CountDownLatch preLatch = new CountDownLatch(1);
+    AtomicReference<HistoryRepository.Page> prePage = new AtomicReference<>();
+    historyRepo.load(
+        new HistoryFilter("", null, null, null),
+        new HistoryRepository.Callback<HistoryRepository.Page>() {
+          @Override
+          public void onSuccess(HistoryRepository.Page value) {
+            prePage.set(value);
+            preLatch.countDown();
+          }
+
+          @Override
+          public void onError() {
+            preLatch.countDown();
+          }
+        });
+    assertTrue(preLatch.await(5, TimeUnit.SECONDS));
+    assertNotNull(prePage.get());
+    assertFalse(prePage.get().entries.isEmpty());
+
+    // Simulate active session
+    UserProfile testUser =
+        new UserProfile(
+            "usr-test-123",
+            "tester@globalnews.ai",
+            "Jane Doe",
+            "google");
+    AuthSession session =
+        new AuthSession(
+            "test-access-token-123",
+            "Bearer",
+            "2026-12-31T23:59:59Z",
+            testUser);
+    authPrefs.saveSession(session);
+
+    CountDownLatch logoutLatch = new CountDownLatch(1);
+    try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+      scenario.onActivity(
+          activity -> {
+            activity.findViewById(R.id.btn_settings).performClick();
+            activity.getSupportFragmentManager().executePendingTransactions();
+
+            TextView tvName = activity.findViewById(R.id.tv_account_name);
+            TextView tvEmail = activity.findViewById(R.id.tv_account_email);
+            View btnSignIn = activity.findViewById(R.id.btn_google_sign_in);
+            View btnSignOut = activity.findViewById(R.id.btn_sign_out);
+
+            assertEquals("Jane Doe", tvName.getText().toString());
+            assertEquals("tester@globalnews.ai", tvEmail.getText().toString());
+            assertEquals(View.GONE, btnSignIn.getVisibility());
+            assertEquals(View.VISIBLE, btnSignOut.getVisibility());
+
+            AuthRepositoryImpl.getInstance(activity).addAuthListener(
+                user -> {
+                  if (user.isGuest()) {
+                    logoutLatch.countDown();
+                  }
+                });
+
+            // Perform sign out
+            btnSignOut.performClick();
+          });
+
+      assertTrue(
+          "Sign out should complete and notify within 5s",
+          logoutLatch.await(5, TimeUnit.SECONDS));
+
+      scenario.onActivity(
+          activity -> {
+            activity.getSupportFragmentManager().executePendingTransactions();
+            TextView tvName = activity.findViewById(R.id.tv_account_name);
+            TextView tvEmail = activity.findViewById(R.id.tv_account_email);
+            View btnSignIn = activity.findViewById(R.id.btn_google_sign_in);
+            View btnSignOut = activity.findViewById(R.id.btn_sign_out);
+
+            // Ui restored to Guest
+            assertEquals(
+                activity.getString(R.string.settings_account_guest_name),
+                tvName.getText().toString());
+            assertEquals(
+                activity.getString(R.string.settings_account_guest_email),
+                tvEmail.getText().toString());
+            assertEquals(View.VISIBLE, btnSignIn.getVisibility());
+            assertEquals(View.GONE, btnSignOut.getVisibility());
+          });
+    }
+
+    // Verify Reading History is preserved without data loss
+    CountDownLatch postLatch = new CountDownLatch(1);
+    AtomicReference<HistoryRepository.Page> postPage = new AtomicReference<>();
+    historyRepo.load(
+        new HistoryFilter("", null, null, null),
+        new HistoryRepository.Callback<HistoryRepository.Page>() {
+          @Override
+          public void onSuccess(HistoryRepository.Page value) {
+            postPage.set(value);
+            postLatch.countDown();
+          }
+
+          @Override
+          public void onError() {
+            postLatch.countDown();
+          }
+        });
+    assertTrue(postLatch.await(5, TimeUnit.SECONDS));
+    assertNotNull(postPage.get());
+
+    boolean foundAfterLogout = false;
+    for (HistoryEntry item : postPage.get().entries) {
+      if ("https://example.org/s3-test".equals(item.getUrl())) {
+        foundAfterLogout = true;
+        assertEquals("Important note to preserve", item.getNote());
+        break;
+      }
+    }
+    assertTrue("Reading History and notes must remain intact after sign out", foundAfterLogout);
   }
 }

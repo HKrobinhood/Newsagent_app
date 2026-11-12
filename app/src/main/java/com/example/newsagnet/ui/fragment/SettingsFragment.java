@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.example.newsagnet.MainActivity;
 import com.example.newsagnet.R;
+import com.example.newsagnet.auth.GoogleAuthManager;
 import com.example.newsagnet.concurrency.ResultCallback;
 import com.example.newsagnet.data.prefs.FontScaleOption;
 import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
@@ -25,6 +26,9 @@ import com.example.newsagnet.data.security.SecureApiKeyStore;
 import com.example.newsagnet.databinding.FragmentSettingsBinding;
 import com.example.newsagnet.model.KeyTestResult;
 import com.example.newsagnet.model.NewsSourceItem;
+import com.example.newsagnet.model.UserProfile;
+import com.example.newsagnet.repository.AuthRepository;
+import com.example.newsagnet.repository.AuthRepositoryImpl;
 import com.example.newsagnet.repository.JavaChatRepository;
 import com.example.newsagnet.repository.JavaChatRepositoryImpl;
 import com.example.newsagnet.repository.JavaNewsRepository;
@@ -32,6 +36,7 @@ import com.example.newsagnet.repository.JavaNewsRepositoryImpl;
 import com.example.newsagnet.repository.NewsCallback;
 import com.example.newsagnet.ui.theme.FontScaleManager;
 import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -47,7 +52,7 @@ import java.util.Set;
  * Layouts & Material Components), Ch6 (Fragment Lifecycle, SharedPreferences, State Restoration),
  * and Ch7 (Asynchronous Concurrency).
  */
-public class SettingsFragment extends Fragment {
+public class SettingsFragment extends Fragment implements AuthRepository.AuthListener {
 
   private static final String TAG = "SettingsFragment";
 
@@ -67,6 +72,8 @@ public class SettingsFragment extends Fragment {
   private SecureApiKeyStore secureApiKeyStore;
   private JavaNewsRepository newsRepository;
   private JavaChatRepository chatRepository;
+  private AuthRepository authRepository;
+  private GoogleAuthManager googleAuthManager;
   private final Map<String, MaterialCheckBox> dynamicSourceCheckBoxes = new LinkedHashMap<>();
   private final Set<String> availableSourceIds =
       new LinkedHashSet<>(NewsSourceItem.getDefaultSourceIds());
@@ -97,6 +104,8 @@ public class SettingsFragment extends Fragment {
     secureApiKeyStore = SecureApiKeyStore.getInstance(requireContext());
     newsRepository = new JavaNewsRepositoryImpl();
     chatRepository = new JavaChatRepositoryImpl(requireContext());
+    authRepository = AuthRepositoryImpl.getInstance(requireContext());
+    googleAuthManager = GoogleAuthManager.getInstance();
   }
 
   @Nullable
@@ -115,7 +124,10 @@ public class SettingsFragment extends Fragment {
     super.onViewCreated(view, savedInstanceState);
     Log.d(TAG, "onViewCreated: Configuring Settings sections and loading persistent preferences");
 
+    authRepository.addAuthListener(this);
+
     setupHeaderNavigation();
+    setupAccountSection();
     setupNewsSourcesSection();
     setupAppearanceSection();
     setupAiAgentSection();
@@ -141,6 +153,95 @@ public class SettingsFragment extends Fragment {
             getActivity().getOnBackPressedDispatcher().onBackPressed();
           }
         });
+  }
+
+  private void setupAccountSection() {
+    binding.btnGoogleSignIn.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Sign in with Google clicked");
+          if (!googleAuthManager.isGoogleOAuthConfigured(requireContext())) {
+            String guide = googleAuthManager.getConfigurationGuideMessage(requireContext());
+            new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Google Sign-In")
+                .setMessage(guide)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+            binding.tvAccountHint.setText(guide);
+            return;
+          }
+
+          googleAuthManager.startGoogleSignIn(
+              requireActivity(),
+              new ResultCallback<String>() {
+                @Override
+                public void onSuccess(@NonNull String idToken) {
+                  authRepository.loginWithGoogle(
+                      idToken,
+                      new ResultCallback<UserProfile>() {
+                        @Override
+                        public void onSuccess(@NonNull UserProfile user) {
+                          syncAccountUi();
+                        }
+
+                        @Override
+                        public void onError(@NonNull Exception exception) {
+                          if (binding != null) {
+                            binding.tvAccountHint.setText(exception.getMessage());
+                          }
+                        }
+                      });
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                  if (binding != null) {
+                    binding.tvAccountHint.setText(exception.getMessage());
+                  }
+                }
+              });
+        });
+
+    binding.btnSignOut.setOnClickListener(
+        v -> {
+          Log.d(TAG, "Sign out clicked");
+          authRepository.logout(
+              new ResultCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                  syncAccountUi();
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                  syncAccountUi();
+                }
+              });
+        });
+  }
+
+  public void syncAccountUi() {
+    if (binding == null || authRepository == null) {
+      return;
+    }
+    if (authRepository.isLoggedIn()) {
+      UserProfile profile = authRepository.getCurrentUser();
+      binding.tvAccountName.setText(profile.getFormattedDisplayName());
+      binding.tvAccountEmail.setText(profile.getEmail());
+      binding.tvAccountHint.setText(R.string.settings_account_signed_in_hint);
+      binding.btnGoogleSignIn.setVisibility(View.GONE);
+      binding.btnSignOut.setVisibility(View.VISIBLE);
+    } else {
+      binding.tvAccountName.setText(R.string.settings_account_guest_name);
+      binding.tvAccountEmail.setText(R.string.settings_account_guest_email);
+      binding.tvAccountHint.setText(R.string.settings_account_hint);
+      binding.btnGoogleSignIn.setVisibility(View.VISIBLE);
+      binding.btnSignOut.setVisibility(View.GONE);
+    }
+  }
+
+  @Override
+  public void onAuthChanged(@NonNull UserProfile userProfile) {
+    syncAccountUi();
   }
 
   private void setupNewsSourcesSection() {
@@ -476,6 +577,7 @@ public class SettingsFragment extends Fragment {
       FontScaleManager.applyFontScale(binding.getRoot(), scale);
       applyPreviewScale(scale);
       syncAiAgentUi();
+      syncAccountUi();
     } finally {
       isUpdatingUi = false;
     }
@@ -585,6 +687,9 @@ public class SettingsFragment extends Fragment {
   public void onDestroyView() {
     super.onDestroyView();
     Log.d(TAG, "onDestroyView: Clearing ViewBinding reference");
+    if (authRepository != null) {
+      authRepository.removeAuthListener(this);
+    }
     dynamicSourceCheckBoxes.clear();
     binding = null;
   }
