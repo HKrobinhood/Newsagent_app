@@ -295,11 +295,9 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
   }
 
   private void setupAppearanceSection() {
-    binding.rgThemeMode.setOnCheckedChangeListener(
-        (group, checkedId) -> {
-          if (isUpdatingUi) {
-            return;
-          }
+    View.OnClickListener themeClickListener =
+        v -> {
+          int checkedId = v.getId();
           ThemeMode selectedMode;
           if (checkedId == R.id.rb_theme_light) {
             selectedMode = ThemeMode.LIGHT;
@@ -308,10 +306,14 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
           } else {
             selectedMode = ThemeMode.SYSTEM;
           }
-          Log.d(TAG, "Theme mode preference changed: " + selectedMode.getKey());
+          Log.d(TAG, "Theme mode user selected: " + selectedMode.getKey());
           preferencesRepository.setThemeMode(selectedMode);
           AppCompatDelegate.setDefaultNightMode(selectedMode.getNightMode());
-        });
+        };
+
+    binding.rbThemeLight.setOnClickListener(themeClickListener);
+    binding.rbThemeDark.setOnClickListener(themeClickListener);
+    binding.rbThemeSystem.setOnClickListener(themeClickListener);
 
     binding.rgFontSize.setOnCheckedChangeListener(
         (group, checkedId) -> {

@@ -271,7 +271,6 @@
                             android:id="@+id/rb_theme_system"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:checked="true"
                             android:text="@string/settings_theme_system"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"

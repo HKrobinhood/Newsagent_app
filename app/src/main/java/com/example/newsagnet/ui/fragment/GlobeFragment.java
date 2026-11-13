@@ -258,10 +258,24 @@ public class GlobeFragment extends Fragment
     binding.btnCardReadFull.setOnClickListener(
         v -> {
           if (selectedArticle != null && selectedArticle.getOriginalUrl() != null) {
-            Intent browserIntent =
-                new Intent(Intent.ACTION_VIEW, Uri.parse(selectedArticle.getOriginalUrl()));
-            startActivity(browserIntent);
-            HistoryRepository.recordOpened(requireContext(), selectedArticle);
+            String url = selectedArticle.getOriginalUrl().trim();
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+              url = "https://" + url;
+            }
+            try {
+              Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+              startActivity(browserIntent);
+              HistoryRepository.recordOpened(requireContext(), selectedArticle);
+            } catch (Exception e) {
+              Log.e(TAG, "Failed to launch browser for url: " + url, e);
+              if (getContext() != null) {
+                android.widget.Toast.makeText(
+                        getContext(),
+                        getString(R.string.news_link_open_failed),
+                        android.widget.Toast.LENGTH_SHORT)
+                    .show();
+              }
+            }
           }
         });
   }
@@ -441,7 +455,8 @@ public class GlobeFragment extends Fragment
 
     String cat = article.getCategory();
     binding.tvCardCategory.setText(cat != null ? cat.toUpperCase(Locale.US) : "GENERAL");
-    binding.tvCardCategory.setTextColor(GlobeMath.getCategoryColor(cat != null ? cat : "general"));
+    binding.tvCardCategory.setTextColor(
+        androidx.core.content.ContextCompat.getColor(requireContext(), R.color.tag_category_text));
 
     binding.tvCardTitle.setText(article.getTitle());
 
