@@ -258,16 +258,11 @@ public class GlobeFragment extends Fragment
     binding.btnCardReadFull.setOnClickListener(
         v -> {
           if (selectedArticle != null && selectedArticle.getOriginalUrl() != null) {
-            String url = selectedArticle.getOriginalUrl().trim();
-            if (!url.startsWith("http://") && !url.startsWith("https://")) {
-              url = "https://" + url;
-            }
             try {
-              Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-              startActivity(browserIntent);
-              HistoryRepository.recordOpened(requireContext(), selectedArticle);
+              com.example.newsagnet.ui.activity.ArticleWebActivity.open(
+                  requireContext(), selectedArticle);
             } catch (Exception e) {
-              Log.e(TAG, "Failed to launch browser for url: " + url, e);
+              Log.e(TAG, "Failed to launch in-app article reader for url: " + selectedArticle.getOriginalUrl(), e);
               if (getContext() != null) {
                 android.widget.Toast.makeText(
                         getContext(),
