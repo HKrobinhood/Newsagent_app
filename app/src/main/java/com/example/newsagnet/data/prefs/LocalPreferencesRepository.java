@@ -119,6 +119,21 @@ public class LocalPreferencesRepository implements UserPreferencesRepository {
     }
   }
 
+  @NonNull
+  @Override
+  public ThemeMode getThemeMode() {
+    return newsPreferences.getThemeMode();
+  }
+
+  @Override
+  public void setThemeMode(@NonNull ThemeMode themeMode) {
+    ThemeMode before = newsPreferences.getThemeMode();
+    newsPreferences.setThemeMode(themeMode);
+    if (before != themeMode) {
+      notifyListeners();
+    }
+  }
+
   @Override
   public float getFontScale() {
     return newsPreferences.getFontScale();

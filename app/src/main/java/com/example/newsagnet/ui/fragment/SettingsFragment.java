@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.example.newsagnet.MainActivity;
@@ -19,6 +20,7 @@ import com.example.newsagnet.auth.GoogleAuthManager;
 import com.example.newsagnet.concurrency.ResultCallback;
 import com.example.newsagnet.data.prefs.FontScaleOption;
 import com.example.newsagnet.data.prefs.LocalPreferencesRepository;
+import com.example.newsagnet.data.prefs.ThemeMode;
 import com.example.newsagnet.data.prefs.UserPreferences;
 import com.example.newsagnet.data.prefs.UserPreferencesRepository;
 import com.example.newsagnet.data.security.AiProviderOption;
@@ -131,7 +133,6 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
     authRepository.addAuthListener(this);
 
     setupHeaderNavigation();
-    setupAccountSection();
     setupNewsSourcesSection();
     setupAppearanceSection();
     setupAiAgentSection();
@@ -176,109 +177,24 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
         });
   }
 
-  private void setupAccountSection() {
-    binding.btnGoogleSignIn.setOnClickListener(
-        v -> {
-          Log.d(TAG, "Sign in with Google clicked");
-          if (!googleAuthManager.isGoogleOAuthConfigured(requireContext())) {
-            String guide = googleAuthManager.getConfigurationGuideMessage(requireContext());
-            new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Google Sign-In")
-                .setMessage(guide)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-            binding.tvAccountHint.setText(guide);
-            return;
-          }
-
-          googleAuthManager.startGoogleSignIn(
-              requireActivity(),
-              new ResultCallback<String>() {
-                @Override
-                public void onSuccess(@NonNull String idToken) {
-                  authRepository.loginWithGoogle(
-                      idToken,
-                      new ResultCallback<UserProfile>() {
-                        @Override
-                        public void onSuccess(@NonNull UserProfile user) {
-                          remotePreferencesRepository.reconcileOnLogin(
-                              new ResultCallback<UserPreferences>() {
-                                @Override
-                                public void onSuccess(@NonNull UserPreferences preferences) {
-                                  if (binding != null) {
-                                    syncAccountUi();
-                                    syncUiFromPreferences();
-                                  }
-                                }
-
-                                @Override
-                                public void onError(@NonNull Exception exception) {
-                                  if (binding != null) {
-                                    syncAccountUi();
-                                  }
-                                }
-                              });
-                        }
-
-                        @Override
-                        public void onError(@NonNull Exception exception) {
-                          if (binding != null) {
-                            binding.tvAccountHint.setText(exception.getMessage());
-                          }
-                        }
-                      });
-                }
-
-                @Override
-                public void onError(@NonNull Exception exception) {
-                  if (binding != null) {
-                    binding.tvAccountHint.setText(exception.getMessage());
-                  }
-                }
-              });
-        });
-
-    binding.btnSignOut.setOnClickListener(
-        v -> {
-          Log.d(TAG, "Sign out clicked");
-          authRepository.logout(
-              new ResultCallback<Void>() {
-                @Override
-                public void onSuccess(Void data) {
-                  syncAccountUi();
-                }
-
-                @Override
-                public void onError(@NonNull Exception exception) {
-                  syncAccountUi();
-                }
-              });
-        });
-  }
-
-  public void syncAccountUi() {
-    if (binding == null || authRepository == null) {
-      return;
-    }
-    if (authRepository.isLoggedIn()) {
-      UserProfile profile = authRepository.getCurrentUser();
-      binding.tvAccountName.setText(profile.getFormattedDisplayName());
-      binding.tvAccountEmail.setText(profile.getEmail());
-      binding.tvAccountHint.setText(R.string.settings_account_signed_in_hint);
-      binding.btnGoogleSignIn.setVisibility(View.GONE);
-      binding.btnSignOut.setVisibility(View.VISIBLE);
-    } else {
-      binding.tvAccountName.setText(R.string.settings_account_guest_name);
-      binding.tvAccountEmail.setText(R.string.settings_account_guest_email);
-      binding.tvAccountHint.setText(R.string.settings_account_hint);
-      binding.btnGoogleSignIn.setVisibility(View.VISIBLE);
-      binding.btnSignOut.setVisibility(View.GONE);
-    }
-  }
-
   @Override
   public void onAuthChanged(@NonNull UserProfile userProfile) {
-    syncAccountUi();
+    if (!userProfile.isGuest() && remotePreferencesRepository != null) {
+      remotePreferencesRepository.syncFromRemote(
+          new ResultCallback<UserPreferences>() {
+            @Override
+            public void onSuccess(@NonNull UserPreferences preferences) {
+              if (binding != null) {
+                syncUiFromPreferences();
+              }
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+              Log.d(TAG, "onAuthChanged sync error: " + exception.getMessage());
+            }
+          });
+    }
   }
 
   private void setupNewsSourcesSection() {
@@ -379,6 +295,26 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
   }
 
   private void setupAppearanceSection() {
+    View.OnClickListener themeClickListener =
+        v -> {
+          int checkedId = v.getId();
+          ThemeMode selectedMode;
+          if (checkedId == R.id.rb_theme_light) {
+            selectedMode = ThemeMode.LIGHT;
+          } else if (checkedId == R.id.rb_theme_dark) {
+            selectedMode = ThemeMode.DARK;
+          } else {
+            selectedMode = ThemeMode.SYSTEM;
+          }
+          Log.d(TAG, "Theme mode user selected: " + selectedMode.getKey());
+          preferencesRepository.setThemeMode(selectedMode);
+          AppCompatDelegate.setDefaultNightMode(selectedMode.getNightMode());
+        };
+
+    binding.rbThemeLight.setOnClickListener(themeClickListener);
+    binding.rbThemeDark.setOnClickListener(themeClickListener);
+    binding.rbThemeSystem.setOnClickListener(themeClickListener);
+
     binding.rgFontSize.setOnCheckedChangeListener(
         (group, checkedId) -> {
           float scale = resolveScaleForRadioId(checkedId);
@@ -606,6 +542,19 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
         entry.getValue().setChecked(prefs.isSourceEnabled(entry.getKey()));
       }
 
+      ThemeMode themeMode = preferencesRepository.getThemeMode();
+      int themeRadioId;
+      if (themeMode == ThemeMode.LIGHT) {
+        themeRadioId = R.id.rb_theme_light;
+      } else if (themeMode == ThemeMode.DARK) {
+        themeRadioId = R.id.rb_theme_dark;
+      } else {
+        themeRadioId = R.id.rb_theme_system;
+      }
+      if (binding.rgThemeMode.getCheckedRadioButtonId() != themeRadioId) {
+        binding.rgThemeMode.check(themeRadioId);
+      }
+
       float scale = prefs.getFontScale();
       int radioId = resolveRadioIdForScale(scale);
       if (binding.rgFontSize.getCheckedRadioButtonId() != radioId) {
@@ -614,7 +563,6 @@ public class SettingsFragment extends Fragment implements AuthRepository.AuthLis
       FontScaleManager.applyFontScale(binding.getRoot(), scale);
       applyPreviewScale(scale);
       syncAiAgentUi();
-      syncAccountUi();
     } finally {
       isUpdatingUi = false;
     }

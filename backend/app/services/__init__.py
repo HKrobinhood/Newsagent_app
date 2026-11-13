@@ -10,6 +10,7 @@ from app.services.rss_normalizer import (
     canonicalize_url,
     clean_title,
     infer_category,
+    is_commercial_affiliate_url,
     parse_published_date,
 )
 from app.services.scheduler import CollectorScheduler
@@ -31,6 +32,7 @@ __all__ = [
     "clean_title",
     "get_web_search_client",
     "infer_category",
+    "is_commercial_affiliate_url",
     "parse_published_date",
     "resolve_location_from_title",
     "sanitize_web_content",

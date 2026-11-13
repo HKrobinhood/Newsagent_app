@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_compact"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="@color/card_dark"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/card_stroke"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <!-- Left Thumbnail -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/iv_compact_cover"
+            android:layout_width="92dp"
+            android:layout_height="88dp"
+            android:contentDescription="@string/news_title"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
+            tools:src="@drawable/mock_img_tech_quantum" />
+
+        <!-- Title on Right -->
+        <TextView
+            android:id="@+id/tv_compact_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="2"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/iv_compact_cover"
+            app:layout_constraintTop_toTopOf="@id/iv_compact_cover"
+            tools:text="Global Semiconductor Alliance Unifies 1.4nm Photolithography Standards" />
+
+        <!-- Bottom Metadata Row on Right -->
+        <LinearLayout
+            android:id="@+id/layout_compact_meta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="@id/iv_compact_cover"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/iv_compact_cover"
+            app:layout_constraintTop_toBottomOf="@id/tv_compact_title"
+            app:layout_constraintVertical_bias="1.0">
+
+            <TextView
+                android:id="@+id/tv_compact_source"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_tag_source"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textColor="@color/tag_source_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                tools:text="Fox News" />
+
+            <TextView
+                android:id="@+id/tv_compact_category"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_tag_category"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textColor="@color/tag_category_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                tools:text="TECH" />
+
+            <TextView
+                android:id="@+id/tv_compact_time"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                tools:text="4h ago" />
+
+            <ImageView
+                android:id="@+id/iv_compact_open"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="@string/news_open_in_browser"
+                android:src="@drawable/ic_open_in_browser" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

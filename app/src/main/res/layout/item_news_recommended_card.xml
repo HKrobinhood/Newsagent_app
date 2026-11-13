@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_recommended_item"
+    android:layout_width="164dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="10dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="@color/card_dark"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/card_stroke"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="10dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/iv_rec_image"
+            android:layout_width="0dp"
+            android:layout_height="110dp"
+            android:contentDescription="@string/news_title"
+            android:scaleType="centerCrop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
+            tools:src="@drawable/mock_img_tech_quantum" />
+
+        <TextView
+            android:id="@+id/tv_rec_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="2"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_rec_image"
+            tools:text="Quantum Computing Lab Unveils 10,000-Qubit Processor" />
+
+        <TextView
+            android:id="@+id/tv_rec_source"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/tag_source_text"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_rec_title"
+            tools:text="BBC News • 2h ago" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

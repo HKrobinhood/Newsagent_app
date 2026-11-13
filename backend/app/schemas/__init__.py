@@ -8,6 +8,9 @@ from app.schemas.geo import (
     GeoProperties,
 )
 from app.schemas.news import (
+    ArticleMediaBase,
+    ArticleMediaCreate,
+    ArticleMediaResponse,
     ErrorDetail,
     ErrorResponse,
     NewsArticleCreate,
@@ -18,6 +21,9 @@ from app.schemas.news import (
 )
 
 __all__ = [
+    "ArticleMediaBase",
+    "ArticleMediaCreate",
+    "ArticleMediaResponse",
     "ChatRequest",
     "ChatResponse",
     "ErrorDetail",

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Account, Media Sources, Appearance &amp; AI Agent</string>
+    <string name="settings_subtitle">Media Sources, Appearance &amp; AI Agent</string>
     <string name="settings_back">Navigate back from Settings</string>
     <string name="settings_open">Open Settings</string>
 
@@ -32,8 +32,13 @@
     <string name="settings_empty_all_sources_disabled">No news sources selected. Enable at least one media source in Settings.</string>
 
     <!-- Appearance Section -->
-    <string name="settings_section_appearance">Appearance</string>
-    <string name="settings_appearance_subtitle">Adjust global text size across headlines, globe cards, AI chat, and history</string>
+    <string name="settings_section_appearance">Appearance &amp; Theme</string>
+    <string name="settings_appearance_subtitle">Customize visual theme mode and typography scaling</string>
+    <string name="settings_theme_title">Theme Mode</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">Follow System</string>
+    <string name="settings_font_scaling_title">Font Scaling</string>
     <string name="settings_font_small">Small (0.90x)</string>
     <string name="settings_font_medium">Medium (1.00x · Default)</string>
     <string name="settings_font_large">Large (1.15x)</string>

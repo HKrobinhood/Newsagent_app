@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_text_only"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="@color/card_dark"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/card_stroke"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="14dp">
+
+        <!-- Accent Left Bar (Editorial Style) -->
+        <View
+            android:id="@+id/view_accent_bar"
+            android:layout_width="3dp"
+            android:layout_height="0dp"
+            android:background="@color/primary_cyan"
+            app:layout_constraintBottom_toBottomOf="@id/tv_text_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tv_text_title" />
+
+        <!-- Source & Date Top Row -->
+        <TextView
+            android:id="@+id/tv_text_source"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_tag_source"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="@color/tag_source_text"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Al Jazeera" />
+
+        <TextView
+            android:id="@+id/tv_text_category"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_tag_category"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="@color/tag_category_text"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/tv_text_source"
+            app:layout_constraintStart_toEndOf="@id/tv_text_source"
+            app:layout_constraintTop_toTopOf="@id/tv_text_source"
+            tools:text="BUSINESS" />
+
+        <ImageView
+            android:id="@+id/iv_text_open"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:contentDescription="@string/news_open_in_browser"
+            android:src="@drawable/ic_open_in_browser"
+            app:layout_constraintBottom_toBottomOf="@id/tv_text_source"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tv_text_source" />
+
+        <TextView
+            android:id="@+id/tv_text_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@id/iv_text_open"
+            app:layout_constraintEnd_toStartOf="@id/iv_text_open"
+            app:layout_constraintTop_toTopOf="@id/iv_text_open"
+            tools:text="5h ago" />
+
+        <!-- Headline Title -->
+        <TextView
+            android:id="@+id/tv_text_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="10dp"
+            android:ellipsize="end"
+            android:lineSpacingExtra="3dp"
+            android:maxLines="3"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/view_accent_bar"
+            app:layout_constraintTop_toBottomOf="@id/tv_text_source"
+            tools:text="G20 Central Banking Advisory Group Finalizes Multi-Currency Cross-Border Liquidity Protocols" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

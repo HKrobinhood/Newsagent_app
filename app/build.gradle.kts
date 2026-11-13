@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.recyclerview)
     implementation(libs.swiperefreshlayout)
+    implementation(libs.glide)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

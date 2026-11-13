@@ -14,6 +14,7 @@ from app.services.rss_normalizer import (
     canonicalize_url,
     clean_title,
     infer_category,
+    is_commercial_affiliate_url,
 )
 
 SAMPLE_RSS_XML = """<?xml version="1.0" encoding="UTF-8"?>
@@ -61,6 +62,23 @@ def test_canonicalize_url():
     url = "https://example.com/article?utm_source=twitter&id=123&utm_medium=social#comments"
     clean = canonicalize_url(url)
     assert clean == "https://example.com/article?id=123"
+
+
+def test_is_commercial_affiliate_url():
+    """Verify detection and rejection of commercial affiliate marketing lead URLs."""
+    affiliate_url = (
+        "https://www.lendingtree.com/?splitterid=home-equity&cproduct=he&cchannel=content"
+    )
+    assert is_commercial_affiliate_url(affiliate_url) is True
+
+    fool_url = "https://www.fool.com/the-ascent/credit-cards/landing/review"
+    assert is_commercial_affiliate_url(fool_url) is True
+
+    news_url = "https://www.aljazeera.com/news/2026/11/3/summit-report"
+    assert is_commercial_affiliate_url(news_url) is False
+
+    bbc_url = "https://www.bbc.co.uk/news/articles/c5djv0p0re2no"
+    assert is_commercial_affiliate_url(bbc_url) is False
 
 
 def test_infer_category():

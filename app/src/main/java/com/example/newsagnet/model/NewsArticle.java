@@ -28,6 +28,9 @@ public class NewsArticle implements Serializable {
   private String locationName;
   private Double latitude;
   private Double longitude;
+  private String imageUrl;
+  private String imageCredit;
+  private Integer mockDrawableRes;
 
   /** Default constructor for JavaBean serialization frameworks. */
   public NewsArticle() {}
@@ -174,6 +177,38 @@ public class NewsArticle implements Serializable {
     this.longitude = longitude;
   }
 
+  @Nullable
+  public String getImageUrl() {
+    return imageUrl;
+  }
+
+  public void setImageUrl(@Nullable String imageUrl) {
+    this.imageUrl = imageUrl;
+  }
+
+  @Nullable
+  public String getImageCredit() {
+    return imageCredit;
+  }
+
+  public void setImageCredit(@Nullable String imageCredit) {
+    this.imageCredit = imageCredit;
+  }
+
+  @Nullable
+  public Integer getMockDrawableRes() {
+    return mockDrawableRes;
+  }
+
+  public void setMockDrawableRes(@Nullable Integer mockDrawableRes) {
+    this.mockDrawableRes = mockDrawableRes;
+  }
+
+  public boolean hasImage() {
+    return (imageUrl != null && !imageUrl.trim().isEmpty())
+        || (mockDrawableRes != null && mockDrawableRes != 0);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -251,6 +286,9 @@ public class NewsArticle implements Serializable {
     private String locationName;
     private Double latitude;
     private Double longitude;
+    private String imageUrl;
+    private String imageCredit;
+    private Integer mockDrawableRes;
 
     public Builder setId(String id) {
       this.id = id;
@@ -302,18 +340,38 @@ public class NewsArticle implements Serializable {
       return this;
     }
 
+    public Builder setImageUrl(String imageUrl) {
+      this.imageUrl = imageUrl;
+      return this;
+    }
+
+    public Builder setImageCredit(String imageCredit) {
+      this.imageCredit = imageCredit;
+      return this;
+    }
+
+    public Builder setMockDrawableRes(Integer mockDrawableRes) {
+      this.mockDrawableRes = mockDrawableRes;
+      return this;
+    }
+
     public NewsArticle build() {
-      return new NewsArticle(
-          id != null ? id : "",
-          title != null ? title : "",
-          sourceId != null ? sourceId : "",
-          sourceName != null ? sourceName : "",
-          publishedAt != null ? publishedAt : "",
-          originalUrl != null ? originalUrl : "",
-          category != null ? category : "",
-          locationName,
-          latitude,
-          longitude);
+      NewsArticle article =
+          new NewsArticle(
+              id != null ? id : "",
+              title != null ? title : "",
+              sourceId != null ? sourceId : "",
+              sourceName != null ? sourceName : "",
+              publishedAt != null ? publishedAt : "",
+              originalUrl != null ? originalUrl : "",
+              category != null ? category : "",
+              locationName,
+              latitude,
+              longitude);
+      article.setImageUrl(imageUrl);
+      article.setImageCredit(imageCredit);
+      article.setMockDrawableRes(mockDrawableRes);
+      return article;
     }
   }
 }

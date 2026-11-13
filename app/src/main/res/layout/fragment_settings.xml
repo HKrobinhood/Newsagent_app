@@ -26,6 +26,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/settings_back"
             android:src="@drawable/ic_history_back"
+            app:tint="@color/text_primary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -81,143 +82,7 @@
             android:orientation="vertical">
 
             <!-- ========================================================= -->
-            <!-- 1. ACCOUNT SECTION                                        -->
-            <!-- ========================================================= -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_settings_account"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/card_dark"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/card_stroke"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tv_section_account_title"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/settings_section_account"
-                            android:textColor="@color/text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_account_status_badge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tag_source"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="10dp"
-                            android:paddingTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:text="@string/settings_account_status_guest"
-                            android:textColor="@color/tag_source_text"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:id="@+id/iv_account_avatar"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:background="@drawable/bg_tag_source"
-                            android:contentDescription="@string/settings_account_avatar_desc"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_account_circle" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_account_name"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/settings_account_guest_name"
-                                android:textColor="@color/text_primary"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tv_account_email"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/settings_account_guest_email"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tv_account_hint"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="@string/settings_account_hint"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_google_sign_in"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/settings_btn_google_sign_in"
-                            android:textColor="@color/white"
-                            app:backgroundTint="@color/primary_blue"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_sign_out"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/settings_btn_sign_out"
-                            android:textColor="@color/text_primary"
-                            android:visibility="gone"
-                            app:cornerRadius="10dp"
-                            app:strokeColor="@color/chip_stroke"
-                            tools:visibility="visible" />
-                    </LinearLayout>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- ========================================================= -->
-            <!-- 2. NEWS SOURCES SECTION                                   -->
+            <!-- 1. NEWS SOURCES SECTION                                   -->
             <!-- ========================================================= -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_settings_sources"
@@ -367,11 +232,75 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
+                    <!-- Theme Mode Sub-section -->
+                    <TextView
+                        android:id="@+id/tv_theme_mode_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/settings_theme_title"
+                        android:textColor="@color/primary_cyan"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_theme_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_light"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_theme_light"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            app:buttonTint="@color/primary_cyan" />
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_dark"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_theme_dark"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            app:buttonTint="@color/primary_cyan" />
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_theme_system"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_theme_system"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            app:buttonTint="@color/primary_cyan" />
+
+                    </RadioGroup>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@color/card_stroke" />
+
+                    <!-- Font Scaling Sub-section -->
+                    <TextView
+                        android:id="@+id/tv_font_size_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_font_scaling_title"
+                        android:textColor="@color/primary_cyan"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
                     <RadioGroup
                         android:id="@+id/rg_font_size"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
                         android:orientation="vertical">
 
                         <com.google.android.material.radiobutton.MaterialRadioButton

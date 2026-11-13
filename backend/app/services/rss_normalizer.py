@@ -101,6 +101,41 @@ def canonicalize_url(raw_url: str) -> str:
     return urlunparse(clean_parts)
 
 
+DISALLOWED_AFFILIATE_DOMAINS: tuple[str, ...] = (
+    "lendingtree.com",
+    "fool.com",
+    "smartasset.com",
+    "bankrate.com",
+    "nextadvisor.com",
+    "nerdwallet.com",
+)
+
+
+def is_commercial_affiliate_url(raw_url: str) -> bool:
+    """Check if URL points to commercial affiliate marketing or lead generation pages.
+
+    Args:
+        raw_url: Candidate article destination URL.
+
+    Returns:
+        True if the URL is commercial affiliate marketing; False otherwise.
+    """
+    if not raw_url:
+        return True
+    try:
+        parsed = urlparse(raw_url.strip())
+        netloc = parsed.netloc.lower()
+        if any(domain in netloc for domain in DISALLOWED_AFFILIATE_DOMAINS):
+            return True
+        query = parsed.query.lower()
+        affiliate_indicators = ("bdst=revshare", "splitterid=", "cmethod=heform")
+        if any(indicator in query for indicator in affiliate_indicators):
+            return True
+        return False
+    except Exception:
+        return False
+
+
 def infer_category(title: str, tags: list[str] | None = None) -> str:
     """Infer standard category from title and feed tags.
 

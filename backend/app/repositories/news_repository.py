@@ -4,9 +4,10 @@ from datetime import datetime
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.models.news import NewsArticle, NewsSource
-from app.schemas.news import NewsArticleCreate, NewsSourceCreate
+from app.models.news import ArticleMedia, NewsArticle, NewsSource
+from app.schemas.news import ArticleMediaCreate, NewsArticleCreate, NewsSourceCreate
 
 
 class NewsRepository:
@@ -71,15 +72,65 @@ class NewsRepository:
 
     async def get_article(self, article_id: str) -> NewsArticle | None:
         """Fetch a single news article by unique ID."""
-        stmt = select(NewsArticle).where(NewsArticle.id == article_id)
+        stmt = (
+            select(NewsArticle)
+            .options(selectinload(NewsArticle.media_items))
+            .where(NewsArticle.id == article_id)
+            .execution_options(populate_existing=True)
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_article_by_url(self, url: str) -> NewsArticle | None:
         """Fetch article by unique original URL."""
-        stmt = select(NewsArticle).where(NewsArticle.original_url == url)
+        stmt = (
+            select(NewsArticle)
+            .options(selectinload(NewsArticle.media_items))
+            .where(NewsArticle.original_url == url)
+            .execution_options(populate_existing=True)
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def create_media(
+        self, article_id: str, media_in: ArticleMediaCreate
+    ) -> ArticleMedia:
+        """Create and persist an article media metadata record."""
+        media = ArticleMedia(
+            article_id=article_id,
+            media_type=media_in.media_type,
+            image_url=str(media_in.image_url),
+            thumbnail_data=media_in.thumbnail_data,
+            storage_key=media_in.storage_key,
+            mime_type=media_in.mime_type,
+            width=media_in.width,
+            height=media_in.height,
+            image_source=media_in.image_source,
+            credit=media_in.credit,
+            license_status=media_in.license_status,
+        )
+        if media_in.id:
+            media.id = media_in.id
+        self.session.add(media)
+        await self.session.commit()
+        await self.session.refresh(media)
+        return media
+
+    async def get_media(self, media_id: str) -> ArticleMedia | None:
+        """Fetch media record by ID."""
+        stmt = select(ArticleMedia).where(ArticleMedia.id == media_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_media_for_article(self, article_id: str) -> list[ArticleMedia]:
+        """Fetch all media records associated with an article."""
+        stmt = (
+            select(ArticleMedia)
+            .where(ArticleMedia.article_id == article_id)
+            .order_by(ArticleMedia.created_at.asc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def list_articles(
         self,
@@ -102,7 +153,11 @@ class NewsRepository:
         else:
             normalized_sources = None
 
-        stmt = select(NewsArticle)
+        stmt = (
+            select(NewsArticle)
+            .options(selectinload(NewsArticle.media_items))
+            .execution_options(populate_existing=True)
+        )
         count_stmt = select(func.count(NewsArticle.id))
 
         if category and category.lower() != "all":
@@ -118,9 +173,7 @@ class NewsRepository:
             )
 
         if normalized_sources is not None:
-            stmt = stmt.where(
-                func.lower(NewsArticle.source_id).in_(normalized_sources)
-            )
+            stmt = stmt.where(func.lower(NewsArticle.source_id).in_(normalized_sources))
             count_stmt = count_stmt.where(
                 func.lower(NewsArticle.source_id).in_(normalized_sources)
             )
@@ -171,6 +224,8 @@ class NewsRepository:
 
         stmt = (
             select(NewsArticle)
+            .options(selectinload(NewsArticle.media_items))
+            .execution_options(populate_existing=True)
             .where(NewsArticle.latitude.is_not(None))
             .where(NewsArticle.longitude.is_not(None))
         )
@@ -178,9 +233,7 @@ class NewsRepository:
             stmt = stmt.where(func.lower(NewsArticle.category) == category.lower())
 
         if normalized_sources is not None:
-            stmt = stmt.where(
-                func.lower(NewsArticle.source_id).in_(normalized_sources)
-            )
+            stmt = stmt.where(func.lower(NewsArticle.source_id).in_(normalized_sources))
 
         stmt = stmt.order_by(desc(NewsArticle.published_at)).limit(limit)
         result = await self.session.execute(stmt)

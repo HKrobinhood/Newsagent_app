@@ -70,6 +70,48 @@ public class NewsPreferencesTest {
   }
 
   @Test
+  public void testThemeMode_defaultsToSystem() {
+    assertEquals(ThemeMode.SYSTEM, preferences.getThemeMode());
+  }
+
+  @Test
+  public void testThemeMode_saveAndRetrieveLightDarkSystem() {
+    preferences.setThemeMode(ThemeMode.LIGHT);
+    assertEquals(ThemeMode.LIGHT, preferences.getThemeMode());
+    assertFalse("Light mode sets darkModeEnabled to false", preferences.isDarkModeEnabled());
+
+    preferences.setThemeMode(ThemeMode.DARK);
+    assertEquals(ThemeMode.DARK, preferences.getThemeMode());
+    assertTrue("Dark mode sets darkModeEnabled to true", preferences.isDarkModeEnabled());
+
+    preferences.setThemeMode(ThemeMode.SYSTEM);
+    assertEquals(ThemeMode.SYSTEM, preferences.getThemeMode());
+  }
+
+  @Test
+  public void testThemeMode_fromKeyParsing() {
+    assertEquals(ThemeMode.LIGHT, ThemeMode.fromKey("light"));
+    assertEquals(ThemeMode.DARK, ThemeMode.fromKey("dark"));
+    assertEquals(ThemeMode.SYSTEM, ThemeMode.fromKey("system"));
+    assertEquals(ThemeMode.SYSTEM, ThemeMode.fromKey(null));
+    assertEquals(ThemeMode.SYSTEM, ThemeMode.fromKey("unknown_key"));
+  }
+
+  @Test
+  public void testUserPreferencesRepository_themeModeDelegation() {
+    LocalPreferencesRepository repo = new LocalPreferencesRepository(preferences);
+    assertEquals(ThemeMode.SYSTEM, repo.getThemeMode());
+
+    repo.setThemeMode(ThemeMode.LIGHT);
+    assertEquals(ThemeMode.LIGHT, repo.getThemeMode());
+    assertEquals(ThemeMode.LIGHT, preferences.getThemeMode());
+
+    repo.setThemeMode(ThemeMode.DARK);
+    assertEquals(ThemeMode.DARK, repo.getThemeMode());
+    assertEquals(ThemeMode.DARK, preferences.getThemeMode());
+  }
+
+  @Test
   public void testPageSize_saveAndRetrieve() {
     assertEquals(20, preferences.getPageSize());
 

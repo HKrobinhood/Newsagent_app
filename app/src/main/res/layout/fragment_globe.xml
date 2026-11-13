@@ -249,11 +249,11 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:visibility="gone"
-        app:cardBackgroundColor="#F00F172A"
+        app:cardBackgroundColor="@color/card_dark"
         app:cardCornerRadius="16dp"
-        app:cardElevation="10dp"
-        app:strokeColor="#660EA5E9"
-        app:strokeWidth="1.5dp"
+        app:cardElevation="8dp"
+        app:strokeColor="@color/card_stroke"
+        app:strokeWidth="1dp"
         tools:visibility="visible">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -271,7 +271,7 @@
                 app:layout_constraintBottom_toBottomOf="@id/tv_card_location"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@id/tv_card_location"
-                app:tint="#38BDF8" />
+                app:tint="@color/primary_cyan" />
 
             <TextView
                 android:id="@+id/tv_card_location"
@@ -279,7 +279,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="8dp"
-                android:textColor="#38BDF8"
+                android:textColor="@color/primary_cyan"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toStartOf="@id/btn_card_close"
@@ -351,7 +351,6 @@
             <!-- Read Original Report Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_card_read_full"
-                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:layout_marginTop="8dp"
@@ -359,6 +358,10 @@
                 android:insetBottom="0dp"
                 android:text="Read Story"
                 android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/primary_blue"
+                app:iconTint="@color/white"
                 app:cornerRadius="8dp"
                 app:icon="@drawable/ic_open_in_browser"
                 app:iconGravity="textEnd"

@@ -111,6 +111,10 @@ public class NewsFragment extends Fragment
     setupHeaderActions();
     setupScrollPagination();
 
+    java.text.SimpleDateFormat dateFormat =
+        new java.text.SimpleDateFormat("EEEE, MMMM d", java.util.Locale.ENGLISH);
+    binding.tvHeaderDate.setText(dateFormat.format(new java.util.Date()));
+
     applyUserFontScale(preferencesRepository.getFontScale());
 
     // Restore persistent user category preference (COMP7506 Ch6 SharedPreferences)
@@ -162,12 +166,22 @@ public class NewsFragment extends Fragment
   }
 
   private void setupRecyclerView() {
-    layoutManager = new LinearLayoutManager(requireContext());
-    newsAdapter = new NewsAdapter(this);
+    androidx.recyclerview.widget.GridLayoutManager gridLayoutManager =
+        new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 2);
+    newsAdapter = new NewsAdapter(this, true);
+    gridLayoutManager.setSpanSizeLookup(
+        new androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+          @Override
+          public int getSpanSize(int position) {
+            return newsAdapter.getSpanSize(position);
+          }
+        });
 
+    layoutManager = gridLayoutManager;
     binding.recyclerNews.setLayoutManager(layoutManager);
     binding.recyclerNews.setAdapter(newsAdapter);
     binding.recyclerNews.setHasFixedSize(true);
+    binding.recyclerNews.setItemViewCacheSize(20);
   }
 
   private void setupCategoryChips() {
@@ -236,20 +250,17 @@ public class NewsFragment extends Fragment
   }
 
   private void setupHeaderActions() {
-    binding.btnHistory.setOnClickListener(
-        v -> startActivity(new Intent(requireContext(), ReadingHistoryActivity.class)));
-
     binding.btnRefresh.setOnClickListener(
         v -> {
           Log.d(TAG, "Header refresh clicked");
           loadNews(true);
         });
 
-    binding.btnSettings.setOnClickListener(
+    binding.btnAccount.setOnClickListener(
         v -> {
-          Log.d(TAG, "Header settings clicked");
+          Log.d(TAG, "Header account avatar clicked: opening Account Bottom Sheet");
           if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).openSettings();
+            ((MainActivity) getActivity()).openAccountBottomSheet();
           }
         });
 
@@ -348,13 +359,24 @@ public class NewsFragment extends Fragment
             currentPage = 1;
             hasMore = result.isHasMore();
 
-            List<NewsArticle> filtered = prefs.filterArticles(result.getArticles());
+            List<NewsArticle> serverArticles = result.getArticles();
             articleDataset.clear();
-            articleDataset.addAll(filtered);
+
+            if (!serverArticles.isEmpty()) {
+              articleDataset.addAll(prefs.filterArticles(serverArticles));
+            } else {
+              // Seamless offline fallback when database has not yet ingested news
+              List<NewsArticle> fallbackFeed =
+                  com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+                      new ArrayList<>(), prefs, currentCategory);
+              articleDataset.addAll(fallbackFeed);
+            }
 
             if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
-              renderData(result.getTotal(), false);
+              renderData(articleDataset.size(), false);
+              updateHeaderSubtitle(
+                  result.getTotal() > 0 ? result.getTotal() : articleDataset.size());
             }
           }
 
@@ -364,6 +386,22 @@ public class NewsFragment extends Fragment
 
             isLoading = false;
             isRefreshing = false;
+
+            if (articleDataset.isEmpty()) {
+              // Provide offline editorial feed if server unreachable and no previous cached articles
+              List<NewsArticle> fallbackFeed =
+                  com.example.newsagnet.data.mock.MockEditorialNewsProvider.provideEditorialFeed(
+                      new ArrayList<>(), prefs, currentCategory);
+
+              if (!fallbackFeed.isEmpty()) {
+                articleDataset.addAll(fallbackFeed);
+                if (binding != null) {
+                  binding.swipeRefresh.setRefreshing(false);
+                  renderData(fallbackFeed.size(), false);
+                }
+                return;
+              }
+            }
 
             if (binding != null) {
               binding.swipeRefresh.setRefreshing(false);
@@ -489,12 +527,23 @@ public class NewsFragment extends Fragment
     String url = article.getOriginalUrl();
     Log.d(TAG, "onNewsItemClick: Opening URL via Intent: " + url);
     if (url != null && !url.trim().isEmpty()) {
+      String cleanUrl = url.trim();
+      if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+        cleanUrl = "https://" + cleanUrl;
+      }
       try {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(cleanUrl));
         startActivity(intent);
         HistoryRepository.recordOpened(requireContext(), article);
       } catch (Exception e) {
-        Log.e(TAG, "Failed to launch intent for URL: " + url, e);
+        Log.e(TAG, "Failed to launch intent for URL: " + cleanUrl, e);
+        if (getContext() != null) {
+          android.widget.Toast.makeText(
+                  getContext(),
+                  getString(R.string.news_link_open_failed),
+                  android.widget.Toast.LENGTH_SHORT)
+              .show();
+        }
       }
     }
   }

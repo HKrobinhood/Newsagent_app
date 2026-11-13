@@ -24,7 +24,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="AI News Intelligence"
-            android:textColor="@color/white"
+            android:textColor="@color/text_primary"
             android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@id/btn_chat_clear"
