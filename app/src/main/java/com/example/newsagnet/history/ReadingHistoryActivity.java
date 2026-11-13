@@ -275,8 +275,7 @@ public class ReadingHistoryActivity extends AppCompatActivity implements History
 
   @Override public void open(HistoryEntry entry) {
     try {
-      startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(entry.getUrl())));
-      HistoryRepository.recordOpened(this, entry.toArticle());
+      com.example.newsagnet.ui.activity.ArticleWebActivity.open(this, entry.toArticle());
     } catch (RuntimeException e) {
       Toast.makeText(this, R.string.history_open_failed, Toast.LENGTH_SHORT).show();
     }

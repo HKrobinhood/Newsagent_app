@@ -45,4 +45,12 @@
     <string name="news_recommended_header">Recommended</string>
     <string name="news_recommended_sub">Curated Stories</string>
     <string name="news_latest_stories_header">Latest Stories</string>
+
+    <!-- In-App Article Reader Strings -->
+    <string name="article_web_back">Navigate back</string>
+    <string name="article_web_share">Share article</string>
+    <string name="article_web_open_browser">Open in Chrome</string>
+    <string name="article_web_loading">Loading article...</string>
+    <string name="article_web_error">Unable to load article webpage.</string>
+    <string name="article_web_share_title">Share Article</string>
 </resources>

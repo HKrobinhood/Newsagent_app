@@ -294,16 +294,11 @@ public class ChatFragment extends Fragment
 
   @Override
   public void onNewsItemClick(@NonNull NewsArticle article) {
-    String url = article.getOriginalUrl();
-    Log.d(TAG, "Citation clicked, opening URL via Intent: " + url);
-    if (url != null && !url.trim().isEmpty()) {
-      try {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        startActivity(intent);
-        HistoryRepository.recordOpened(requireContext(), article);
-      } catch (Exception e) {
-        Log.e(TAG, "Failed to launch web browser intent: " + url, e);
-      }
+    Log.d(TAG, "Citation clicked, opening article in-app: " + article.getOriginalUrl());
+    try {
+      com.example.newsagnet.ui.activity.ArticleWebActivity.open(requireContext(), article);
+    } catch (Exception e) {
+      Log.e(TAG, "Failed to launch in-app article reader: " + article.getOriginalUrl(), e);
     }
   }
 
