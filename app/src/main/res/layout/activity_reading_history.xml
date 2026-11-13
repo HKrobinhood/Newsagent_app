@@ -9,7 +9,7 @@
         android:paddingStart="8dp" android:paddingEnd="8dp">
         <ImageButton android:id="@+id/history_back" android:layout_width="48dp"
             android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_history_back" android:contentDescription="@string/history_back" />
+            android:src="@drawable/ic_history_back" app:tint="@color/text_primary" android:contentDescription="@string/history_back" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:text="@string/history_title"
             android:textSize="22sp" android:textStyle="bold" android:textColor="@color/text_primary"
